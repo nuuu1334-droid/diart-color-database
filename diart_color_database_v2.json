@@ -1,0 +1,3642 @@
+{
+  "metadata": {
+    "project": "DiArt",
+    "database": "Color Database",
+    "version": "2.0",
+    "language": "ru",
+    "system": "12 seasonal color types",
+    "palette_size": 12,
+    "note": "Фирменная база DiArt. Палитры и рекомендации стандартизированы для стабильной работы бота и не заменяют очную консультацию колориста.",
+    "last_update": "2026-08-01",
+    "compatibility": "Расширяет v1 без удаления существующих полей.",
+    "purpose": "Единый источник данных для анализа, палитры и динамического оформления карт DiArt."
+  },
+  "color_types": [
+    {
+      "code": "light_spring",
+      "name_en": "Light Spring",
+      "name_ru": "Светлая весна",
+      "season": "Spring",
+      "temperature": "Warm-Neutral",
+      "value": "Light",
+      "chroma": "Clear-Soft",
+      "contrast": "Low",
+      "characteristics": [
+        "light",
+        "warm",
+        "fresh"
+      ],
+      "description": "Светлый, теплый и свежий цветотип. Лучше всего раскрывается в нежных солнечных оттенках без сильной темноты и резкости.",
+      "palette": [
+        {
+          "hex": "#FFF1C9",
+          "name_en": "Warm Ivory",
+          "name_ru": "Теплый айвори",
+          "id": "light_spring_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#F5D6A1",
+          "name_en": "Light Camel",
+          "name_ru": "Светлый кэмел",
+          "id": "light_spring_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#F6C6A8",
+          "name_en": "Peach",
+          "name_ru": "Персиковый",
+          "id": "light_spring_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#F49A8A",
+          "name_en": "Soft Coral",
+          "name_ru": "Мягкий коралл",
+          "id": "light_spring_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#F7C85E",
+          "name_en": "Butter Yellow",
+          "name_ru": "Сливочно-желтый",
+          "id": "light_spring_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#C9E5A8",
+          "name_en": "Fresh Green",
+          "name_ru": "Свежий зеленый",
+          "id": "light_spring_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#A9DDC9",
+          "name_en": "Mint",
+          "name_ru": "Мятный",
+          "id": "light_spring_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#8FD5D7",
+          "name_en": "Light Aqua",
+          "name_ru": "Светлая аква",
+          "id": "light_spring_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#A7CFE8",
+          "name_en": "Warm Sky Blue",
+          "name_ru": "Теплый небесно-голубой",
+          "id": "light_spring_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#C8B8E8",
+          "name_en": "Light Lavender",
+          "name_ru": "Светлая лаванда",
+          "id": "light_spring_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#E9B8C8",
+          "name_en": "Warm Pink",
+          "name_ru": "Теплый розовый",
+          "id": "light_spring_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#CBB89D",
+          "name_en": "Light Warm Taupe",
+          "name_ru": "Светлый теплый тауп",
+          "id": "light_spring_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "светлое золото",
+        "шампань",
+        "розовое золото"
+      ],
+      "best_fabrics": [
+        "хлопок",
+        "тонкий лен",
+        "шелк",
+        "светлая замша",
+        "мягкий трикотаж"
+      ],
+      "best_prints": [
+        "мелкий цветочный",
+        "акварельный",
+        "тонкая полоска",
+        "светлая клетка"
+      ],
+      "base_colors": [
+        "теплый айвори",
+        "светлый бежевый",
+        "песочный",
+        "светлый кэмел",
+        "теплый тауп"
+      ],
+      "accent_colors": [
+        "персиковый",
+        "коралловый",
+        "мятный",
+        "аквамариновый",
+        "сливочно-желтый"
+      ],
+      "avoid_colors": [
+        "черный",
+        "угольный",
+        "холодный бордо",
+        "ледяной розовый",
+        "неоновые оттенки"
+      ],
+      "best_white": "теплый айвори",
+      "best_black": "светлый теплый коричневый",
+      "best_denim": "светлый теплый голубой деним",
+      "best_leather": "медовый беж",
+      "hair": {
+        "best": [
+          "пшеничный блонд",
+          "медовый блонд",
+          "светло-золотистый русый",
+          "клубничный блонд"
+        ],
+        "avoid": [
+          "сине-черный",
+          "холодный пепельный",
+          "темный шоколад"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "персиковый нюд",
+          "светлый коралл",
+          "теплый розовый"
+        ],
+        "blush": [
+          "персиковый",
+          "абрикосовый"
+        ],
+        "eyeshadow": [
+          "шампань",
+          "светлая бронза",
+          "мята",
+          "теплый беж"
+        ],
+        "eyeliner": [
+          "мягкий коричневый",
+          "оливково-коричневый"
+        ]
+      },
+      "display": {
+        "title_ru": "Светлая весна",
+        "title_en": "Light Spring",
+        "meaning_ru": "Светлый, тёпло-нейтральный и свежий колорит.",
+        "card_description": "Светлый, теплый и свежий цветотип. Лучше всего раскрывается в нежных солнечных оттенках без сильной темноты и резкости."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 72,
+          "depth": 18,
+          "chroma": 60,
+          "contrast": 22
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Солнечная лёгкость",
+        "primary_color": "#F49A8A",
+        "secondary_color": "#F7C85E",
+        "background_top": "#FFFCF5",
+        "background_bottom": "#FFF2D8",
+        "surface_color": "#FFFDF9",
+        "title_color": "#6B4D3B",
+        "text_color": "#5C5149",
+        "line_color": "#E7CBA7",
+        "pin_color": "#F49A8A",
+        "pin_inner_color": "#FFF8EC",
+        "star_color": "#E9B44C",
+        "sample_border_color": "#DDBF93",
+        "shadow_color": "#7A56331F",
+        "pattern": "soft_sun_stars",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FFFCF5",
+          "bottom": "#FFF2D8"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#FFF8EC",
+          "border_color": "#F49A8A",
+          "star_color": "#F49A8A",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Солнечная лёгкость",
+        "pattern": "soft_sun_stars",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "LIGHT-SPRING"
+      }
+    },
+    {
+      "code": "warm_spring",
+      "name_en": "Warm Spring",
+      "name_ru": "Теплая весна",
+      "season": "Spring",
+      "temperature": "Warm",
+      "value": "Medium-Light",
+      "chroma": "Clear",
+      "contrast": "Medium",
+      "characteristics": [
+        "warm",
+        "golden",
+        "lively"
+      ],
+      "description": "Теплый, солнечный и живой цветотип. Особенно хороши чистые золотистые, фруктовые и бирюзовые оттенки.",
+      "palette": [
+        {
+          "hex": "#FFF0C2",
+          "name_en": "Cream",
+          "name_ru": "Кремовый",
+          "id": "warm_spring_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#E7B86D",
+          "name_en": "Golden Beige",
+          "name_ru": "Золотистый беж",
+          "id": "warm_spring_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#F5C542",
+          "name_en": "Sunflower",
+          "name_ru": "Подсолнечный",
+          "id": "warm_spring_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#F39A3D",
+          "name_en": "Apricot",
+          "name_ru": "Абрикосовый",
+          "id": "warm_spring_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#E96F4C",
+          "name_en": "Warm Coral",
+          "name_ru": "Теплый коралл",
+          "id": "warm_spring_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#D9504F",
+          "name_en": "Tomato Red",
+          "name_ru": "Томатно-красный",
+          "id": "warm_spring_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#A9C95A",
+          "name_en": "Leaf Green",
+          "name_ru": "Листовой зеленый",
+          "id": "warm_spring_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#66B66C",
+          "name_en": "Spring Green",
+          "name_ru": "Весенний зеленый",
+          "id": "warm_spring_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#38B4A6",
+          "name_en": "Turquoise",
+          "name_ru": "Бирюзовый",
+          "id": "warm_spring_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#4EB8D1",
+          "name_en": "Warm Aqua",
+          "name_ru": "Теплая аква",
+          "id": "warm_spring_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#B86F3A",
+          "name_en": "Cinnamon",
+          "name_ru": "Корица",
+          "id": "warm_spring_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#7A5A35",
+          "name_en": "Warm Brown",
+          "name_ru": "Теплый коричневый",
+          "id": "warm_spring_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "желтое золото",
+        "бронза",
+        "медь"
+      ],
+      "best_fabrics": [
+        "лен",
+        "хлопок",
+        "шелк",
+        "замша",
+        "легкая шерсть"
+      ],
+      "best_prints": [
+        "тропический",
+        "теплая геометрия",
+        "цветочный",
+        "полоска"
+      ],
+      "base_colors": [
+        "кремовый",
+        "золотистый беж",
+        "карамельный",
+        "теплый коричневый",
+        "хаки"
+      ],
+      "accent_colors": [
+        "бирюзовый",
+        "коралловый",
+        "томатный",
+        "подсолнечный",
+        "весенний зеленый"
+      ],
+      "avoid_colors": [
+        "холодный серый",
+        "ледяной голубой",
+        "холодный розовый",
+        "синевато-черный"
+      ],
+      "best_white": "кремовый",
+      "best_black": "теплый темно-коричневый",
+      "best_denim": "средний теплый синий деним",
+      "best_leather": "карамель",
+      "hair": {
+        "best": [
+          "медовый",
+          "золотисто-русый",
+          "карамельный",
+          "медный"
+        ],
+        "avoid": [
+          "платиновый",
+          "холодный пепельный",
+          "сине-черный"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "коралловый",
+          "томатно-красный",
+          "теплый персиковый"
+        ],
+        "blush": [
+          "абрикосовый",
+          "теплый коралл"
+        ],
+        "eyeshadow": [
+          "золото",
+          "бронза",
+          "олива",
+          "теплая бирюза"
+        ],
+        "eyeliner": [
+          "коричневый",
+          "оливковый"
+        ]
+      },
+      "display": {
+        "title_ru": "Тёплая весна",
+        "title_en": "Warm Spring",
+        "meaning_ru": "Выраженно тёплый, солнечный и чистый колорит.",
+        "card_description": "Теплый, солнечный и живой цветотип. Особенно хороши чистые золотистые, фруктовые и бирюзовые оттенки."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 92,
+          "depth": 38,
+          "chroma": 76,
+          "contrast": 50
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Золотое солнце",
+        "primary_color": "#E96F4C",
+        "secondary_color": "#F5C542",
+        "background_top": "#FFFDF5",
+        "background_bottom": "#FBE8C4",
+        "surface_color": "#FFF9ED",
+        "title_color": "#6A4025",
+        "text_color": "#5D4A3B",
+        "line_color": "#DDB879",
+        "pin_color": "#E96F4C",
+        "pin_inner_color": "#FFF5E4",
+        "star_color": "#C98E24",
+        "sample_border_color": "#D5A65D",
+        "shadow_color": "#6A40251F",
+        "pattern": "sunray_stars",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FFFDF5",
+          "bottom": "#FBE8C4"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#FFF5E4",
+          "border_color": "#E96F4C",
+          "star_color": "#E96F4C",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Золотое солнце",
+        "pattern": "sunray_stars",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "WARM-SPRING"
+      }
+    },
+    {
+      "code": "bright_spring",
+      "name_en": "Bright Spring",
+      "name_ru": "Яркая весна",
+      "season": "Spring",
+      "temperature": "Warm-Neutral",
+      "value": "Medium",
+      "chroma": "Very Clear",
+      "contrast": "High",
+      "characteristics": [
+        "bright",
+        "clear",
+        "contrasting"
+      ],
+      "description": "Яркий, чистый и контрастный цветотип с теплым направлением. Выдерживает насыщенные цвета и четкие сочетания.",
+      "palette": [
+        {
+          "hex": "#FFF8E8",
+          "name_en": "Bright Ivory",
+          "name_ru": "Яркий айвори",
+          "id": "bright_spring_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#FFD23F",
+          "name_en": "Lemon Gold",
+          "name_ru": "Лимонно-золотой",
+          "id": "bright_spring_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#FF9F1C",
+          "name_en": "Orange",
+          "name_ru": "Оранжевый",
+          "id": "bright_spring_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#FF5A5F",
+          "name_en": "Bright Coral",
+          "name_ru": "Яркий коралл",
+          "id": "bright_spring_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#E83E6F",
+          "name_en": "Warm Fuchsia",
+          "name_ru": "Теплая фуксия",
+          "id": "bright_spring_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#1FC7A6",
+          "name_en": "Emerald Aqua",
+          "name_ru": "Изумрудная аква",
+          "id": "bright_spring_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#00A9D6",
+          "name_en": "Clear Turquoise",
+          "name_ru": "Чистая бирюза",
+          "id": "bright_spring_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#3C8DDE",
+          "name_en": "Clear Blue",
+          "name_ru": "Чистый синий",
+          "id": "bright_spring_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#56C45B",
+          "name_en": "Bright Green",
+          "name_ru": "Яркий зеленый",
+          "id": "bright_spring_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#7F4FBF",
+          "name_en": "Warm Violet",
+          "name_ru": "Теплый фиолетовый",
+          "id": "bright_spring_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#2B3A42",
+          "name_en": "Warm Navy",
+          "name_ru": "Теплый темно-синий",
+          "id": "bright_spring_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#8B5E3C",
+          "name_en": "Clear Brown",
+          "name_ru": "Чистый коричневый",
+          "id": "bright_spring_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "полированное золото",
+        "светлое золото",
+        "комбинированные металлы"
+      ],
+      "best_fabrics": [
+        "гладкий хлопок",
+        "шелк",
+        "сатин",
+        "кожа",
+        "плотный трикотаж"
+      ],
+      "best_prints": [
+        "контрастная геометрия",
+        "яркая полоска",
+        "крупный цветочный",
+        "color block"
+      ],
+      "base_colors": [
+        "яркий айвори",
+        "теплый темно-синий",
+        "чистый коричневый",
+        "светлый кэмел"
+      ],
+      "accent_colors": [
+        "яркий коралл",
+        "бирюзовый",
+        "лимонный",
+        "изумрудный",
+        "теплая фуксия"
+      ],
+      "avoid_colors": [
+        "пыльные розовые",
+        "грязно-серые",
+        "тусклый хаки",
+        "слишком мягкие пастели"
+      ],
+      "best_white": "яркий айвори",
+      "best_black": "теплый темно-синий",
+      "best_denim": "чистый средне-синий деним",
+      "best_leather": "коньячный",
+      "hair": {
+        "best": [
+          "золотистый каштан",
+          "теплый темно-русый",
+          "медный каштан"
+        ],
+        "avoid": [
+          "матовый пепельный",
+          "сине-черный",
+          "грязный бежевый блонд"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "яркий коралл",
+          "теплый красный",
+          "арбузный"
+        ],
+        "blush": [
+          "чистый персиковый",
+          "коралловый"
+        ],
+        "eyeshadow": [
+          "золото",
+          "бирюза",
+          "теплый фиолетовый",
+          "бронза"
+        ],
+        "eyeliner": [
+          "темно-коричневый",
+          "теплый темно-синий"
+        ]
+      },
+      "display": {
+        "title_ru": "Яркая весна",
+        "title_en": "Bright Spring",
+        "meaning_ru": "Чистый, яркий и контрастный колорит с тёплым направлением.",
+        "card_description": "Яркий, чистый и контрастный цветотип с теплым направлением. Выдерживает насыщенные цвета и четкие сочетания."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 68,
+          "depth": 50,
+          "chroma": 94,
+          "contrast": 82
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Чистая энергия",
+        "primary_color": "#00A9D6",
+        "secondary_color": "#FF5A5F",
+        "background_top": "#FFFEF7",
+        "background_bottom": "#EAF9F7",
+        "surface_color": "#FFFFFF",
+        "title_color": "#243C45",
+        "text_color": "#425158",
+        "line_color": "#84D7D2",
+        "pin_color": "#FF5A5F",
+        "pin_inner_color": "#FFFFFF",
+        "star_color": "#FFD23F",
+        "sample_border_color": "#38B4A6",
+        "shadow_color": "#243C451A",
+        "pattern": "clear_sparkles",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FFFEF7",
+          "bottom": "#EAF9F7"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#FFFFFF",
+          "border_color": "#FF5A5F",
+          "star_color": "#FF5A5F",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Чистая энергия",
+        "pattern": "clear_sparkles",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "BRIGHT-SPRING"
+      }
+    },
+    {
+      "code": "light_summer",
+      "name_en": "Light Summer",
+      "name_ru": "Светлое лето",
+      "season": "Summer",
+      "temperature": "Cool-Neutral",
+      "value": "Light",
+      "chroma": "Soft",
+      "contrast": "Low",
+      "characteristics": [
+        "light",
+        "cool",
+        "delicate"
+      ],
+      "description": "Светлый, прохладный и деликатный цветотип. Гармоничен в воздушных, припыленных и нежных оттенках.",
+      "palette": [
+        {
+          "hex": "#F4F1EF",
+          "name_en": "Soft White",
+          "name_ru": "Мягкий белый",
+          "id": "light_summer_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#D8D2D0",
+          "name_en": "Pearl Grey",
+          "name_ru": "Жемчужно-серый",
+          "id": "light_summer_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#C9B8C4",
+          "name_en": "Rose Taupe",
+          "name_ru": "Розовый тауп",
+          "id": "light_summer_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#E7C7D3",
+          "name_en": "Powder Pink",
+          "name_ru": "Пудрово-розовый",
+          "id": "light_summer_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#C8B8DF",
+          "name_en": "Lavender",
+          "name_ru": "Лавандовый",
+          "id": "light_summer_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#AFCBE3",
+          "name_en": "Powder Blue",
+          "name_ru": "Пудрово-голубой",
+          "id": "light_summer_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#93BFD2",
+          "name_en": "Soft Aqua",
+          "name_ru": "Мягкая аква",
+          "id": "light_summer_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#B6D3CC",
+          "name_en": "Seafoam",
+          "name_ru": "Морская пена",
+          "id": "light_summer_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#BFCDAF",
+          "name_en": "Cool Sage",
+          "name_ru": "Холодный шалфей",
+          "id": "light_summer_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#D7B7C4",
+          "name_en": "Dusty Rose",
+          "name_ru": "Пыльная роза",
+          "id": "light_summer_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#A9AFC4",
+          "name_en": "Soft Periwinkle",
+          "name_ru": "Мягкий барвинок",
+          "id": "light_summer_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#7D8FA6",
+          "name_en": "Soft Blue Grey",
+          "name_ru": "Мягкий серо-синий",
+          "id": "light_summer_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "серебро",
+        "белое золото",
+        "светлое розовое золото"
+      ],
+      "best_fabrics": [
+        "шифон",
+        "тонкий хлопок",
+        "кашемир",
+        "матовый шелк",
+        "мягкий лен"
+      ],
+      "best_prints": [
+        "акварельный",
+        "мелкий цветочный",
+        "размытая полоска",
+        "тонкая клетка"
+      ],
+      "base_colors": [
+        "мягкий белый",
+        "жемчужно-серый",
+        "розовый тауп",
+        "серо-синий",
+        "светлый холодный беж"
+      ],
+      "accent_colors": [
+        "лавандовый",
+        "пудрово-голубой",
+        "пыльная роза",
+        "морская пена",
+        "барвинок"
+      ],
+      "avoid_colors": [
+        "черный",
+        "оранжевый",
+        "яркий горчичный",
+        "неоновые цвета",
+        "темный шоколад"
+      ],
+      "best_white": "мягкий белый",
+      "best_black": "серо-синий",
+      "best_denim": "светлый холодный голубой деним",
+      "best_leather": "серо-бежевый",
+      "hair": {
+        "best": [
+          "светло-пепельный русый",
+          "бежево-пепельный блонд",
+          "перламутровый блонд"
+        ],
+        "avoid": [
+          "яркая медь",
+          "золотистый рыжий",
+          "сине-черный"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "розовый нюд",
+          "пыльная роза",
+          "холодный коралл"
+        ],
+        "blush": [
+          "светлый розовый",
+          "розово-бежевый"
+        ],
+        "eyeshadow": [
+          "тауп",
+          "лаванда",
+          "серо-голубой",
+          "жемчужный"
+        ],
+        "eyeliner": [
+          "серый",
+          "мягкий темно-синий"
+        ]
+      },
+      "display": {
+        "title_ru": "Светлое лето",
+        "title_en": "Light Summer",
+        "meaning_ru": "Светлый, прохладно-нейтральный и деликатный колорит.",
+        "card_description": "Светлый, прохладный и деликатный цветотип. Гармоничен в воздушных, припыленных и нежных оттенках."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 28,
+          "depth": 18,
+          "chroma": 34,
+          "contrast": 22
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Воздушная прохлада",
+        "primary_color": "#A7CFE8",
+        "secondary_color": "#C8B8DF",
+        "background_top": "#FCFBFD",
+        "background_bottom": "#EEF4F8",
+        "surface_color": "#FFFFFF",
+        "title_color": "#596779",
+        "text_color": "#68717B",
+        "line_color": "#C4CFDA",
+        "pin_color": "#93BFD2",
+        "pin_inner_color": "#F8FBFD",
+        "star_color": "#B7A8CE",
+        "sample_border_color": "#A9AFC4",
+        "shadow_color": "#59677918",
+        "pattern": "airy_stars",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FCFBFD",
+          "bottom": "#EEF4F8"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#F8FBFD",
+          "border_color": "#93BFD2",
+          "star_color": "#93BFD2",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Воздушная прохлада",
+        "pattern": "airy_stars",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "LIGHT-SUMMER"
+      }
+    },
+    {
+      "code": "cool_summer",
+      "name_en": "Cool Summer",
+      "name_ru": "Холодное лето",
+      "season": "Summer",
+      "temperature": "Cool",
+      "value": "Medium",
+      "chroma": "Soft-Moderate",
+      "contrast": "Medium",
+      "characteristics": [
+        "cool",
+        "elegant",
+        "balanced"
+      ],
+      "description": "Холодный, сдержанный и элегантный цветотип. Лучше всего выглядит в прохладных ягодных, синих и серо-розовых оттенках.",
+      "palette": [
+        {
+          "hex": "#F1EEF0",
+          "name_en": "Cool Soft White",
+          "name_ru": "Холодный мягкий белый",
+          "id": "cool_summer_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#B8B7C0",
+          "name_en": "Cool Grey",
+          "name_ru": "Холодный серый",
+          "id": "cool_summer_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#8B8090",
+          "name_en": "Plum Taupe",
+          "name_ru": "Сливовый тауп",
+          "id": "cool_summer_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#C98FA6",
+          "name_en": "Cool Rose",
+          "name_ru": "Холодная роза",
+          "id": "cool_summer_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#A85E78",
+          "name_en": "Raspberry",
+          "name_ru": "Малиновый",
+          "id": "cool_summer_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#7E4A68",
+          "name_en": "Muted Berry",
+          "name_ru": "Приглушенный ягодный",
+          "id": "cool_summer_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#8787B8",
+          "name_en": "Blue Violet",
+          "name_ru": "Сине-фиолетовый",
+          "id": "cool_summer_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#5E76A8",
+          "name_en": "Cornflower Blue",
+          "name_ru": "Васильковый",
+          "id": "cool_summer_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#527A95",
+          "name_en": "Steel Blue",
+          "name_ru": "Стальной синий",
+          "id": "cool_summer_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#5C8E8A",
+          "name_en": "Cool Teal",
+          "name_ru": "Холодный тил",
+          "id": "cool_summer_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#75927D",
+          "name_en": "Cool Green",
+          "name_ru": "Холодный зеленый",
+          "id": "cool_summer_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#46566D",
+          "name_en": "Soft Navy",
+          "name_ru": "Мягкий темно-синий",
+          "id": "cool_summer_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "серебро",
+        "белое золото",
+        "платина"
+      ],
+      "best_fabrics": [
+        "кашемир",
+        "шелк",
+        "шерсть",
+        "матовый сатин",
+        "гладкий трикотаж"
+      ],
+      "best_prints": [
+        "средняя клетка",
+        "холодный цветочный",
+        "мягкая геометрия",
+        "тонкая полоска"
+      ],
+      "base_colors": [
+        "холодный серый",
+        "мягкий темно-синий",
+        "сливовый тауп",
+        "серо-бежевый"
+      ],
+      "accent_colors": [
+        "малиновый",
+        "васильковый",
+        "холодная роза",
+        "сливовый",
+        "холодный тил"
+      ],
+      "avoid_colors": [
+        "оранжевый",
+        "теплый горчичный",
+        "золотисто-бежевый",
+        "томатный",
+        "кислотный лайм"
+      ],
+      "best_white": "холодный мягкий белый",
+      "best_black": "мягкий темно-синий",
+      "best_denim": "средний холодный синий деним",
+      "best_leather": "холодный тауп",
+      "hair": {
+        "best": [
+          "пепельный русый",
+          "холодный темно-русый",
+          "нейтрально-пепельный шатен"
+        ],
+        "avoid": [
+          "золотистый блонд",
+          "медный",
+          "теплый каштан"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "холодная роза",
+          "малина",
+          "ягодный нюд"
+        ],
+        "blush": [
+          "холодный розовый",
+          "розово-сливовый"
+        ],
+        "eyeshadow": [
+          "серый",
+          "сливовый",
+          "васильковый",
+          "холодный тауп"
+        ],
+        "eyeliner": [
+          "графитовый",
+          "темно-синий"
+        ]
+      },
+      "display": {
+        "title_ru": "Холодное лето",
+        "title_en": "Cool Summer",
+        "meaning_ru": "Выраженно прохладный, сдержанный и мягко-контрастный колорит.",
+        "card_description": "Холодный, сдержанный и элегантный цветотип. Лучше всего выглядит в прохладных ягодных, синих и серо-розовых оттенках."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 8,
+          "depth": 50,
+          "chroma": 42,
+          "contrast": 50
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Холодная элегантность",
+        "primary_color": "#5E76A8",
+        "secondary_color": "#A85E78",
+        "background_top": "#FAF9FB",
+        "background_bottom": "#ECECF3",
+        "surface_color": "#FEFDFE",
+        "title_color": "#47546F",
+        "text_color": "#5F6370",
+        "line_color": "#B8B7C0",
+        "pin_color": "#5E76A8",
+        "pin_inner_color": "#F5F4F8",
+        "star_color": "#9B7690",
+        "sample_border_color": "#8787B8",
+        "shadow_color": "#47546F1A",
+        "pattern": "cool_constellation",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FAF9FB",
+          "bottom": "#ECECF3"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#F5F4F8",
+          "border_color": "#5E76A8",
+          "star_color": "#5E76A8",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Холодная элегантность",
+        "pattern": "cool_constellation",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "COOL-SUMMER"
+      }
+    },
+    {
+      "code": "soft_summer",
+      "name_en": "Soft Summer",
+      "name_ru": "Мягкое лето",
+      "season": "Summer",
+      "temperature": "Cool-Neutral",
+      "value": "Medium",
+      "chroma": "Muted",
+      "contrast": "Low-Medium",
+      "characteristics": [
+        "soft",
+        "muted",
+        "cool-neutral"
+      ],
+      "description": "Мягкий, приглушенный и прохладно-нейтральный цветотип. Лучше всего смотрится в сложных дымчатых оттенках без резких контрастов.",
+      "palette": [
+        {
+          "hex": "#E8E3DF",
+          "name_en": "Soft Oyster",
+          "name_ru": "Мягкий устричный",
+          "id": "soft_summer_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#B6ADA7",
+          "name_en": "Mushroom",
+          "name_ru": "Грибной",
+          "id": "soft_summer_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#8F8483",
+          "name_en": "Soft Taupe",
+          "name_ru": "Мягкий тауп",
+          "id": "soft_summer_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#B88E98",
+          "name_en": "Dusty Rose",
+          "name_ru": "Пыльная роза",
+          "id": "soft_summer_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#936878",
+          "name_en": "Muted Mauve",
+          "name_ru": "Приглушенный маув",
+          "id": "soft_summer_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#8D7F9B",
+          "name_en": "Smoky Lavender",
+          "name_ru": "Дымчатая лаванда",
+          "id": "soft_summer_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#788CA3",
+          "name_en": "Slate Blue",
+          "name_ru": "Сланцево-синий",
+          "id": "soft_summer_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#6F8E95",
+          "name_en": "Muted Teal",
+          "name_ru": "Приглушенный тил",
+          "id": "soft_summer_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#81938A",
+          "name_en": "Eucalyptus",
+          "name_ru": "Эвкалиптовый",
+          "id": "soft_summer_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#8F9675",
+          "name_en": "Soft Olive",
+          "name_ru": "Мягкая олива",
+          "id": "soft_summer_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#6E686E",
+          "name_en": "Soft Charcoal",
+          "name_ru": "Мягкий угольный",
+          "id": "soft_summer_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#4E5D68",
+          "name_en": "Smoky Navy",
+          "name_ru": "Дымчатый темно-синий",
+          "id": "soft_summer_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "матовое серебро",
+        "белое золото",
+        "розовое золото без желтизны"
+      ],
+      "best_fabrics": [
+        "замша",
+        "кашемир",
+        "матовый шелк",
+        "мягкая шерсть",
+        "лен"
+      ],
+      "best_prints": [
+        "размытый цветочный",
+        "дымчатая клетка",
+        "меланж",
+        "нежная геометрия"
+      ],
+      "base_colors": [
+        "грибной",
+        "мягкий тауп",
+        "дымчатый темно-синий",
+        "мягкий угольный",
+        "устричный"
+      ],
+      "accent_colors": [
+        "пыльная роза",
+        "дымчатая лаванда",
+        "эвкалиптовый",
+        "сланцево-синий",
+        "приглушенный маув"
+      ],
+      "avoid_colors": [
+        "чистый черный",
+        "ярко-белый",
+        "неоновые",
+        "томатно-красный",
+        "яркий оранжевый"
+      ],
+      "best_white": "устричный",
+      "best_black": "мягкий угольный",
+      "best_denim": "приглушенный серо-синий деним",
+      "best_leather": "серо-тауповый",
+      "hair": {
+        "best": [
+          "пепельно-русый",
+          "дымчатый шатен",
+          "холодный бежевый блонд"
+        ],
+        "avoid": [
+          "яркая медь",
+          "золотистый блонд",
+          "сине-черный"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "пыльная роза",
+          "ягодно-бежевый",
+          "мягкий маув"
+        ],
+        "blush": [
+          "розово-бежевый",
+          "приглушенная роза"
+        ],
+        "eyeshadow": [
+          "тауп",
+          "дымчатая лаванда",
+          "эвкалиптовый",
+          "серо-синий"
+        ],
+        "eyeliner": [
+          "мягкий графит",
+          "серо-коричневый"
+        ]
+      },
+      "display": {
+        "title_ru": "Мягкое лето",
+        "title_en": "Soft Summer",
+        "meaning_ru": "Приглушённый, прохладно-нейтральный и мягкий колорит.",
+        "card_description": "Мягкий, приглушенный и прохладно-нейтральный цветотип. Лучше всего смотрится в сложных дымчатых оттенках без резких контрастов."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 32,
+          "depth": 50,
+          "chroma": 12,
+          "contrast": 36
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Дымчатая мягкость",
+        "primary_color": "#788CA3",
+        "secondary_color": "#B88E98",
+        "background_top": "#FAF8F8",
+        "background_bottom": "#EAE6E7",
+        "surface_color": "#FDFBFB",
+        "title_color": "#5D5962",
+        "text_color": "#69646A",
+        "line_color": "#B9B0B2",
+        "pin_color": "#8D7F9B",
+        "pin_inner_color": "#F7F3F4",
+        "star_color": "#A88C98",
+        "sample_border_color": "#8F8483",
+        "shadow_color": "#5D596218",
+        "pattern": "soft_mist_stars",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FAF8F8",
+          "bottom": "#EAE6E7"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#F7F3F4",
+          "border_color": "#8D7F9B",
+          "star_color": "#8D7F9B",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Дымчатая мягкость",
+        "pattern": "soft_mist_stars",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "SOFT-SUMMER"
+      }
+    },
+    {
+      "code": "soft_autumn",
+      "name_en": "Soft Autumn",
+      "name_ru": "Мягкая осень",
+      "season": "Autumn",
+      "temperature": "Warm-Neutral",
+      "value": "Medium",
+      "chroma": "Muted",
+      "contrast": "Low-Medium",
+      "characteristics": [
+        "soft",
+        "warm-neutral",
+        "earthy"
+      ],
+      "description": "Мягкий, теплый и природный цветотип. Лучше всего раскрывается в сложных землистых оттенках средней глубины.",
+      "palette": [
+        {
+          "hex": "#EFE2CF",
+          "name_en": "Warm Oyster",
+          "name_ru": "Теплый устричный",
+          "id": "soft_autumn_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#C8B49A",
+          "name_en": "Sand",
+          "name_ru": "Песочный",
+          "id": "soft_autumn_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#A8957D",
+          "name_en": "Warm Taupe",
+          "name_ru": "Теплый тауп",
+          "id": "soft_autumn_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#C89078",
+          "name_en": "Muted Peach",
+          "name_ru": "Приглушенный персиковый",
+          "id": "soft_autumn_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#B8735C",
+          "name_en": "Soft Terracotta",
+          "name_ru": "Мягкая терракота",
+          "id": "soft_autumn_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#A66D61",
+          "name_en": "Cinnamon Rose",
+          "name_ru": "Коричная роза",
+          "id": "soft_autumn_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#9A8F5E",
+          "name_en": "Sage Olive",
+          "name_ru": "Шалфейная олива",
+          "id": "soft_autumn_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#77836A",
+          "name_en": "Eucalyptus Green",
+          "name_ru": "Эвкалиптовый зеленый",
+          "id": "soft_autumn_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#6E8B83",
+          "name_en": "Muted Teal",
+          "name_ru": "Приглушенный тил",
+          "id": "soft_autumn_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#7E8FA0",
+          "name_en": "Warm Slate Blue",
+          "name_ru": "Теплый сланцево-синий",
+          "id": "soft_autumn_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#80664F",
+          "name_en": "Cocoa",
+          "name_ru": "Какао",
+          "id": "soft_autumn_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#5E5146",
+          "name_en": "Soft Espresso",
+          "name_ru": "Мягкий эспрессо",
+          "id": "soft_autumn_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "матовое золото",
+        "бронза",
+        "медь",
+        "античная латунь"
+      ],
+      "best_fabrics": [
+        "замша",
+        "лен",
+        "шерсть",
+        "твид",
+        "матовый шелк"
+      ],
+      "best_prints": [
+        "ботанический",
+        "размытая клетка",
+        "пейсли",
+        "мелкий животный"
+      ],
+      "base_colors": [
+        "песочный",
+        "теплый тауп",
+        "какао",
+        "мягкий эспрессо",
+        "шалфейная олива"
+      ],
+      "accent_colors": [
+        "мягкая терракота",
+        "коричная роза",
+        "эвкалиптовый",
+        "приглушенный тил",
+        "персиковый"
+      ],
+      "avoid_colors": [
+        "чистый черный",
+        "ярко-белый",
+        "неоновые",
+        "ледяной голубой",
+        "яркая фуксия"
+      ],
+      "best_white": "теплый устричный",
+      "best_black": "мягкий эспрессо",
+      "best_denim": "приглушенный средне-синий деним",
+      "best_leather": "тауп или коньячный",
+      "hair": {
+        "best": [
+          "бежево-русый",
+          "мягкий каштан",
+          "карамельный шатен",
+          "приглушенная медь"
+        ],
+        "avoid": [
+          "платиновый",
+          "сине-черный",
+          "ярко-красный"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "коричная роза",
+          "теплый нюд",
+          "мягкая терракота"
+        ],
+        "blush": [
+          "персиково-бежевый",
+          "теплая пыльная роза"
+        ],
+        "eyeshadow": [
+          "олива",
+          "какао",
+          "бронза",
+          "теплый тауп"
+        ],
+        "eyeliner": [
+          "коричневый",
+          "оливково-серый"
+        ]
+      },
+      "display": {
+        "title_ru": "Мягкая осень",
+        "title_en": "Soft Autumn",
+        "meaning_ru": "Приглушённый, тёпло-нейтральный и природный колорит.",
+        "card_description": "Мягкий, теплый и природный цветотип. Лучше всего раскрывается в сложных землистых оттенках средней глубины."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 68,
+          "depth": 52,
+          "chroma": 14,
+          "contrast": 36
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Тёплая природная мягкость",
+        "primary_color": "#A8957D",
+        "secondary_color": "#B8735C",
+        "background_top": "#FCFAF5",
+        "background_bottom": "#F0E4D5",
+        "surface_color": "#FFFDF8",
+        "title_color": "#5B493B",
+        "text_color": "#655B52",
+        "line_color": "#C7B49B",
+        "pin_color": "#A66D61",
+        "pin_inner_color": "#FAF3E9",
+        "star_color": "#B6925D",
+        "sample_border_color": "#9A8F5E",
+        "shadow_color": "#5B493B1B",
+        "pattern": "botanical_stars",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FCFAF5",
+          "bottom": "#F0E4D5"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#FAF3E9",
+          "border_color": "#A66D61",
+          "star_color": "#A66D61",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Тёплая природная мягкость",
+        "pattern": "botanical_stars",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "SOFT-AUTUMN"
+      }
+    },
+    {
+      "code": "warm_autumn",
+      "name_en": "Warm Autumn",
+      "name_ru": "Теплая осень",
+      "season": "Autumn",
+      "temperature": "Warm",
+      "value": "Medium-Deep",
+      "chroma": "Rich-Muted",
+      "contrast": "Medium",
+      "characteristics": [
+        "warm",
+        "rich",
+        "earthy"
+      ],
+      "description": "Выраженно теплый, насыщенный природный цветотип. Его украшают осенние оттенки золота, меди, мха и пряностей.",
+      "palette": [
+        {
+          "hex": "#F1DFC2",
+          "name_en": "Warm Cream",
+          "name_ru": "Теплый кремовый",
+          "id": "warm_autumn_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#D2A85C",
+          "name_en": "Golden Camel",
+          "name_ru": "Золотистый кэмел",
+          "id": "warm_autumn_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#C68B2C",
+          "name_en": "Mustard",
+          "name_ru": "Горчичный",
+          "id": "warm_autumn_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#C96B2B",
+          "name_en": "Pumpkin",
+          "name_ru": "Тыквенный",
+          "id": "warm_autumn_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#B6532E",
+          "name_en": "Rust",
+          "name_ru": "Ржаво-терракотовый",
+          "id": "warm_autumn_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#9E4F3A",
+          "name_en": "Brick",
+          "name_ru": "Кирпичный",
+          "id": "warm_autumn_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#8C7A32",
+          "name_en": "Golden Olive",
+          "name_ru": "Золотистая олива",
+          "id": "warm_autumn_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#61733B",
+          "name_en": "Moss",
+          "name_ru": "Мох",
+          "id": "warm_autumn_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#3F7465",
+          "name_en": "Warm Teal",
+          "name_ru": "Теплый тил",
+          "id": "warm_autumn_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#406C73",
+          "name_en": "Petrol Blue",
+          "name_ru": "Петрольный синий",
+          "id": "warm_autumn_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#7B4D32",
+          "name_en": "Cognac",
+          "name_ru": "Коньячный",
+          "id": "warm_autumn_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#4A3528",
+          "name_en": "Dark Chocolate",
+          "name_ru": "Темный шоколад",
+          "id": "warm_autumn_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "желтое золото",
+        "медь",
+        "бронза",
+        "латунь"
+      ],
+      "best_fabrics": [
+        "твид",
+        "шерсть",
+        "замша",
+        "кожа",
+        "лен",
+        "вельвет"
+      ],
+      "best_prints": [
+        "клетка",
+        "пейсли",
+        "анималистичный",
+        "ботанический",
+        "елочка"
+      ],
+      "base_colors": [
+        "теплый кремовый",
+        "золотистый кэмел",
+        "коньячный",
+        "темный шоколад",
+        "мох"
+      ],
+      "accent_colors": [
+        "горчичный",
+        "тыквенный",
+        "кирпичный",
+        "теплый тил",
+        "петрольный"
+      ],
+      "avoid_colors": [
+        "ледяной голубой",
+        "холодный серый",
+        "чистая фуксия",
+        "синевато-черный",
+        "ярко-белый"
+      ],
+      "best_white": "теплый кремовый",
+      "best_black": "темный шоколад",
+      "best_denim": "темный теплый синий деним",
+      "best_leather": "коньячный",
+      "hair": {
+        "best": [
+          "медный",
+          "теплый каштан",
+          "золотисто-коричневый",
+          "корица"
+        ],
+        "avoid": [
+          "пепельный",
+          "платиновый",
+          "сине-черный"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "кирпичный",
+          "терракота",
+          "корица",
+          "теплый красный"
+        ],
+        "blush": [
+          "теплый персиковый",
+          "терракотово-бежевый"
+        ],
+        "eyeshadow": [
+          "бронза",
+          "мох",
+          "золото",
+          "шоколад"
+        ],
+        "eyeliner": [
+          "темно-коричневый",
+          "оливковый"
+        ]
+      },
+      "display": {
+        "title_ru": "Тёплая осень",
+        "title_en": "Warm Autumn",
+        "meaning_ru": "Выраженно тёплый, насыщенный и землистый колорит.",
+        "card_description": "Выраженно теплый, насыщенный природный цветотип. Его украшают осенние оттенки золота, меди, мха и пряностей."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 94,
+          "depth": 68,
+          "chroma": 48,
+          "contrast": 52
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Золотая осень",
+        "primary_color": "#B6532E",
+        "secondary_color": "#C68B2C",
+        "background_top": "#FCF8F1",
+        "background_bottom": "#EFDCC2",
+        "surface_color": "#FFF9F1",
+        "title_color": "#553A28",
+        "text_color": "#5F5147",
+        "line_color": "#B99567",
+        "pin_color": "#B6532E",
+        "pin_inner_color": "#F9EAD8",
+        "star_color": "#B8862E",
+        "sample_border_color": "#8C7A32",
+        "shadow_color": "#553A281F",
+        "pattern": "golden_leaf_stars",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FCF8F1",
+          "bottom": "#EFDCC2"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#F9EAD8",
+          "border_color": "#B6532E",
+          "star_color": "#B6532E",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Золотая осень",
+        "pattern": "golden_leaf_stars",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "WARM-AUTUMN"
+      }
+    },
+    {
+      "code": "deep_autumn",
+      "name_en": "Deep Autumn",
+      "name_ru": "Глубокая осень",
+      "season": "Autumn",
+      "temperature": "Warm-Neutral",
+      "value": "Deep",
+      "chroma": "Rich-Muted",
+      "contrast": "Medium-High",
+      "characteristics": [
+        "deep",
+        "warm",
+        "rich"
+      ],
+      "description": "Глубокий, теплый и благородный цветотип. Лучше всего раскрывается в насыщенных природных оттенках шоколада, оливы, терракоты и петроля.",
+      "palette": [
+        {
+          "hex": "#F2E6D5",
+          "name_en": "Ivory",
+          "name_ru": "Айвори",
+          "id": "deep_autumn_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#C7A66A",
+          "name_en": "Camel",
+          "name_ru": "Кэмел",
+          "id": "deep_autumn_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#B8863B",
+          "name_en": "Antique Gold",
+          "name_ru": "Античное золото",
+          "id": "deep_autumn_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#A55A2A",
+          "name_en": "Terracotta",
+          "name_ru": "Терракотовый",
+          "id": "deep_autumn_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#8F3F2E",
+          "name_en": "Brick Red",
+          "name_ru": "Кирпично-красный",
+          "id": "deep_autumn_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#6B3B32",
+          "name_en": "Warm Burgundy",
+          "name_ru": "Теплый бордо",
+          "id": "deep_autumn_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#6F7C3D",
+          "name_en": "Moss Green",
+          "name_ru": "Моховой зеленый",
+          "id": "deep_autumn_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#455A2F",
+          "name_en": "Dark Olive",
+          "name_ru": "Темная олива",
+          "id": "deep_autumn_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#2F665E",
+          "name_en": "Deep Teal",
+          "name_ru": "Глубокий тил",
+          "id": "deep_autumn_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#355463",
+          "name_en": "Petrol Navy",
+          "name_ru": "Петрольный темно-синий",
+          "id": "deep_autumn_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#6B4423",
+          "name_en": "Chestnut",
+          "name_ru": "Каштановый",
+          "id": "deep_autumn_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#2F241D",
+          "name_en": "Espresso",
+          "name_ru": "Эспрессо",
+          "id": "deep_autumn_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "античное золото",
+        "бронза",
+        "медь",
+        "латунь"
+      ],
+      "best_fabrics": [
+        "кожа",
+        "замша",
+        "бархат",
+        "твид",
+        "шерсть",
+        "лен"
+      ],
+      "best_prints": [
+        "анималистичный",
+        "клетка",
+        "пейсли",
+        "елочка",
+        "крупный природный"
+      ],
+      "base_colors": [
+        "эспрессо",
+        "темный шоколад",
+        "темная олива",
+        "кэмел",
+        "айвори"
+      ],
+      "accent_colors": [
+        "терракота",
+        "кирпичный",
+        "теплый бордо",
+        "глубокий тил",
+        "античное золото"
+      ],
+      "avoid_colors": [
+        "ледяной голубой",
+        "холодный розовый",
+        "ярко-белый",
+        "неоновый лайм",
+        "холодная фуксия"
+      ],
+      "best_white": "айвори",
+      "best_black": "эспрессо",
+      "best_denim": "темный петрольно-синий деним",
+      "best_leather": "коньячный или темно-коричневый",
+      "hair": {
+        "best": [
+          "темный шоколад",
+          "каштан",
+          "мокко",
+          "теплый темно-русый",
+          "медно-коричневый"
+        ],
+        "avoid": [
+          "платиновый",
+          "пепельный",
+          "сине-черный"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "теплый нюд",
+          "терракота",
+          "кирпичный",
+          "корица"
+        ],
+        "blush": [
+          "персиковый",
+          "абрикосовый",
+          "теплый коралл"
+        ],
+        "eyeshadow": [
+          "бронза",
+          "олива",
+          "шоколад",
+          "хаки"
+        ],
+        "eyeliner": [
+          "темно-коричневый",
+          "оливковый"
+        ]
+      },
+      "display": {
+        "title_ru": "Глубокая осень",
+        "title_en": "Deep Autumn",
+        "meaning_ru": "Глубокий, тёпло-нейтральный и насыщенно-приглушённый колорит.",
+        "card_description": "Глубокий, теплый и благородный цветотип. Лучше всего раскрывается в насыщенных природных оттенках шоколада, оливы, терракоты и петроля."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 72,
+          "depth": 92,
+          "chroma": 42,
+          "contrast": 72
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Шоколадная глубина",
+        "primary_color": "#6B4423",
+        "secondary_color": "#A55A2A",
+        "background_top": "#FBF7F2",
+        "background_bottom": "#EEDCC9",
+        "surface_color": "#FFF9F2",
+        "title_color": "#3C2B20",
+        "text_color": "#51463F",
+        "line_color": "#B59673",
+        "pin_color": "#6B4423",
+        "pin_inner_color": "#F5E8D8",
+        "star_color": "#B8863B",
+        "sample_border_color": "#8F3F2E",
+        "shadow_color": "#3C2B2024",
+        "pattern": "warm_handdrawn_stars",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FBF7F2",
+          "bottom": "#EEDCC9"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#F5E8D8",
+          "border_color": "#6B4423",
+          "star_color": "#6B4423",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Шоколадная глубина",
+        "pattern": "warm_handdrawn_stars",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "DEEP-AUTUMN"
+      }
+    },
+    {
+      "code": "deep_winter",
+      "name_en": "Deep Winter",
+      "name_ru": "Глубокая зима",
+      "season": "Winter",
+      "temperature": "Cool-Neutral",
+      "value": "Deep",
+      "chroma": "Clear-Rich",
+      "contrast": "High",
+      "characteristics": [
+        "deep",
+        "cool-neutral",
+        "dramatic"
+      ],
+      "description": "Глубокий, контрастный и драматичный цветотип. Лучше всего смотрится в темных холодных и насыщенных драгоценных оттенках.",
+      "palette": [
+        {
+          "hex": "#F4F4F6",
+          "name_en": "Cool White",
+          "name_ru": "Холодный белый",
+          "id": "deep_winter_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#BFC3CC",
+          "name_en": "Silver Grey",
+          "name_ru": "Серебристо-серый",
+          "id": "deep_winter_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#7A1432",
+          "name_en": "Deep Cranberry",
+          "name_ru": "Глубокая клюква",
+          "id": "deep_winter_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#8C1D5B",
+          "name_en": "Deep Fuchsia",
+          "name_ru": "Глубокая фуксия",
+          "id": "deep_winter_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#54245F",
+          "name_en": "Royal Plum",
+          "name_ru": "Королевская слива",
+          "id": "deep_winter_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#233D8B",
+          "name_en": "Royal Blue",
+          "name_ru": "Королевский синий",
+          "id": "deep_winter_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#183B66",
+          "name_en": "Deep Navy",
+          "name_ru": "Глубокий темно-синий",
+          "id": "deep_winter_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#0B6B70",
+          "name_en": "Deep Turquoise",
+          "name_ru": "Глубокая бирюза",
+          "id": "deep_winter_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#086A4F",
+          "name_en": "Emerald",
+          "name_ru": "Изумрудный",
+          "id": "deep_winter_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#37404A",
+          "name_en": "Charcoal",
+          "name_ru": "Угольный",
+          "id": "deep_winter_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#241B2B",
+          "name_en": "Black Plum",
+          "name_ru": "Черно-сливовый",
+          "id": "deep_winter_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#111217",
+          "name_en": "Soft Black",
+          "name_ru": "Мягкий черный",
+          "id": "deep_winter_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "серебро",
+        "белое золото",
+        "платина",
+        "темный металл"
+      ],
+      "best_fabrics": [
+        "бархат",
+        "кожа",
+        "шелк",
+        "сатин",
+        "плотная шерсть"
+      ],
+      "best_prints": [
+        "контрастная геометрия",
+        "крупный цветочный",
+        "графика",
+        "темная клетка"
+      ],
+      "base_colors": [
+        "мягкий черный",
+        "угольный",
+        "глубокий темно-синий",
+        "холодный белый",
+        "черно-сливовый"
+      ],
+      "accent_colors": [
+        "изумрудный",
+        "королевский синий",
+        "глубокая клюква",
+        "сливовый",
+        "глубокая бирюза"
+      ],
+      "avoid_colors": [
+        "оранжевый",
+        "горчичный",
+        "теплый бежевый",
+        "персиковый",
+        "золотисто-коричневый"
+      ],
+      "best_white": "холодный белый",
+      "best_black": "мягкий черный",
+      "best_denim": "очень темный холодный деним",
+      "best_leather": "черный или холодный бордо",
+      "hair": {
+        "best": [
+          "холодный темный шатен",
+          "черно-коричневый",
+          "холодный эспрессо"
+        ],
+        "avoid": [
+          "золотистый блонд",
+          "медный",
+          "карамельный"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "клюквенный",
+          "холодный бордо",
+          "сливовый",
+          "ягодный"
+        ],
+        "blush": [
+          "холодная роза",
+          "ягодно-розовый"
+        ],
+        "eyeshadow": [
+          "угольный",
+          "сливовый",
+          "темно-синий",
+          "изумрудный"
+        ],
+        "eyeliner": [
+          "черный",
+          "темно-синий"
+        ]
+      },
+      "display": {
+        "title_ru": "Глубокая зима",
+        "title_en": "Deep Winter",
+        "meaning_ru": "Глубокий, прохладно-нейтральный и контрастный колорит.",
+        "card_description": "Глубокий, контрастный и драматичный цветотип. Лучше всего смотрится в темных холодных и насыщенных драгоценных оттенках."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 28,
+          "depth": 94,
+          "chroma": 72,
+          "contrast": 86
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Драгоценная глубина",
+        "primary_color": "#183B66",
+        "secondary_color": "#54245F",
+        "background_top": "#F8F9FC",
+        "background_bottom": "#E3E8F0",
+        "surface_color": "#FCFCFE",
+        "title_color": "#20283A",
+        "text_color": "#434957",
+        "line_color": "#9299AA",
+        "pin_color": "#54245F",
+        "pin_inner_color": "#F1F2F7",
+        "star_color": "#6D7896",
+        "sample_border_color": "#233D8B",
+        "shadow_color": "#20283A24",
+        "pattern": "deep_geometric_stars",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#F8F9FC",
+          "bottom": "#E3E8F0"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#F1F2F7",
+          "border_color": "#54245F",
+          "star_color": "#54245F",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Драгоценная глубина",
+        "pattern": "deep_geometric_stars",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "DEEP-WINTER"
+      }
+    },
+    {
+      "code": "cool_winter",
+      "name_en": "Cool Winter",
+      "name_ru": "Холодная зима",
+      "season": "Winter",
+      "temperature": "Cool",
+      "value": "Medium-Deep",
+      "chroma": "Clear",
+      "contrast": "High",
+      "characteristics": [
+        "cool",
+        "clear",
+        "contrasting"
+      ],
+      "description": "Выраженно холодный, чистый и контрастный цветотип. Его украшают ледяные оттенки, насыщенные синие, ягодные и четкий черно-белый контраст.",
+      "palette": [
+        {
+          "hex": "#FFFFFF",
+          "name_en": "Pure White",
+          "name_ru": "Чистый белый",
+          "id": "cool_winter_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#C7CBD4",
+          "name_en": "Icy Grey",
+          "name_ru": "Ледяной серый",
+          "id": "cool_winter_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#D8C8ED",
+          "name_en": "Icy Lilac",
+          "name_ru": "Ледяная сирень",
+          "id": "cool_winter_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#E15A9A",
+          "name_en": "Cool Pink",
+          "name_ru": "Холодный розовый",
+          "id": "cool_winter_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#C2185B",
+          "name_en": "Fuchsia",
+          "name_ru": "Фуксия",
+          "id": "cool_winter_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#A3153D",
+          "name_en": "Blue Red",
+          "name_ru": "Холодный красный",
+          "id": "cool_winter_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#64307D",
+          "name_en": "Royal Purple",
+          "name_ru": "Королевский фиолетовый",
+          "id": "cool_winter_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#3557B7",
+          "name_en": "Cobalt",
+          "name_ru": "Кобальтовый",
+          "id": "cool_winter_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#2176AE",
+          "name_en": "Clear Blue",
+          "name_ru": "Чистый синий",
+          "id": "cool_winter_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#008D8A",
+          "name_en": "Cool Turquoise",
+          "name_ru": "Холодная бирюза",
+          "id": "cool_winter_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#007A57",
+          "name_en": "Cool Emerald",
+          "name_ru": "Холодный изумрудный",
+          "id": "cool_winter_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#111111",
+          "name_en": "Black",
+          "name_ru": "Черный",
+          "id": "cool_winter_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "серебро",
+        "белое золото",
+        "платина"
+      ],
+      "best_fabrics": [
+        "шелк",
+        "сатин",
+        "гладкая шерсть",
+        "кожа",
+        "бархат"
+      ],
+      "best_prints": [
+        "черно-белая геометрия",
+        "контрастная полоска",
+        "яркий цветочный",
+        "графичный"
+      ],
+      "base_colors": [
+        "черный",
+        "чистый белый",
+        "холодный темно-синий",
+        "графит"
+      ],
+      "accent_colors": [
+        "фуксия",
+        "кобальтовый",
+        "холодный красный",
+        "изумрудный",
+        "королевский фиолетовый"
+      ],
+      "avoid_colors": [
+        "горчичный",
+        "ржавый",
+        "теплый бежевый",
+        "персиковый",
+        "золотисто-коричневый"
+      ],
+      "best_white": "чистый белый",
+      "best_black": "черный",
+      "best_denim": "чистый темно-синий деним",
+      "best_leather": "черный",
+      "hair": {
+        "best": [
+          "холодный черный",
+          "пепельный темный шатен",
+          "холодный темно-русый"
+        ],
+        "avoid": [
+          "медный",
+          "золотистый",
+          "карамельный"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "фуксия",
+          "холодный красный",
+          "малиновый",
+          "ягодный"
+        ],
+        "blush": [
+          "холодный розовый",
+          "малиново-розовый"
+        ],
+        "eyeshadow": [
+          "графит",
+          "кобальт",
+          "сирень",
+          "серебро"
+        ],
+        "eyeliner": [
+          "черный",
+          "темно-синий"
+        ]
+      },
+      "display": {
+        "title_ru": "Холодная зима",
+        "title_en": "Cool Winter",
+        "meaning_ru": "Выраженно холодный, чистый и контрастный колорит.",
+        "card_description": "Выраженно холодный, чистый и контрастный цветотип. Его украшают ледяные оттенки, насыщенные синие, ягодные и четкий черно-белый контраст."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 6,
+          "depth": 70,
+          "chroma": 82,
+          "contrast": 88
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Ледяная ясность",
+        "primary_color": "#3557B7",
+        "secondary_color": "#C2185B",
+        "background_top": "#FBFCFF",
+        "background_bottom": "#E8EDF7",
+        "surface_color": "#FFFFFF",
+        "title_color": "#24345F",
+        "text_color": "#46516A",
+        "line_color": "#AAB5D0",
+        "pin_color": "#3557B7",
+        "pin_inner_color": "#F5F8FF",
+        "star_color": "#7D88B8",
+        "sample_border_color": "#64307D",
+        "shadow_color": "#24345F1F",
+        "pattern": "icy_stars",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FBFCFF",
+          "bottom": "#E8EDF7"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#F5F8FF",
+          "border_color": "#3557B7",
+          "star_color": "#3557B7",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Ледяная ясность",
+        "pattern": "icy_stars",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "COOL-WINTER"
+      }
+    },
+    {
+      "code": "bright_winter",
+      "name_en": "Bright Winter",
+      "name_ru": "Яркая зима",
+      "season": "Winter",
+      "temperature": "Cool-Neutral",
+      "value": "Medium",
+      "chroma": "Very Clear",
+      "contrast": "Very High",
+      "characteristics": [
+        "bright",
+        "clear",
+        "high-contrast"
+      ],
+      "description": "Самый яркий и контрастный зимний цветотип. Выдерживает чистые насыщенные цвета, резкие сочетания и блеск.",
+      "palette": [
+        {
+          "hex": "#FFFFFF",
+          "name_en": "Pure White",
+          "name_ru": "Чистый белый",
+          "id": "bright_winter_01",
+          "order": 1,
+          "role": "light_neutral"
+        },
+        {
+          "hex": "#111111",
+          "name_en": "Black",
+          "name_ru": "Черный",
+          "id": "bright_winter_02",
+          "order": 2,
+          "role": "neutral"
+        },
+        {
+          "hex": "#FF2D55",
+          "name_en": "Electric Pink",
+          "name_ru": "Электрический розовый",
+          "id": "bright_winter_03",
+          "order": 3,
+          "role": "signature"
+        },
+        {
+          "hex": "#E40046",
+          "name_en": "Clear Red",
+          "name_ru": "Чистый красный",
+          "id": "bright_winter_04",
+          "order": 4,
+          "role": "accent"
+        },
+        {
+          "hex": "#A600A6",
+          "name_en": "Magenta",
+          "name_ru": "Маджента",
+          "id": "bright_winter_05",
+          "order": 5,
+          "role": "accent"
+        },
+        {
+          "hex": "#7030A0",
+          "name_en": "Bright Purple",
+          "name_ru": "Яркий фиолетовый",
+          "id": "bright_winter_06",
+          "order": 6,
+          "role": "accent"
+        },
+        {
+          "hex": "#0047AB",
+          "name_en": "Cobalt Blue",
+          "name_ru": "Кобальтово-синий",
+          "id": "bright_winter_07",
+          "order": 7,
+          "role": "signature"
+        },
+        {
+          "hex": "#00A7E1",
+          "name_en": "Electric Blue",
+          "name_ru": "Электрический синий",
+          "id": "bright_winter_08",
+          "order": 8,
+          "role": "signature"
+        },
+        {
+          "hex": "#00A6A6",
+          "name_en": "Bright Turquoise",
+          "name_ru": "Яркая бирюза",
+          "id": "bright_winter_09",
+          "order": 9,
+          "role": "accent"
+        },
+        {
+          "hex": "#00A651",
+          "name_en": "Emerald Green",
+          "name_ru": "Изумрудный зеленый",
+          "id": "bright_winter_10",
+          "order": 10,
+          "role": "accent"
+        },
+        {
+          "hex": "#C6FF00",
+          "name_en": "Acid Lime",
+          "name_ru": "Кислотный лайм",
+          "id": "bright_winter_11",
+          "order": 11,
+          "role": "dark_neutral"
+        },
+        {
+          "hex": "#C7C9D3",
+          "name_en": "Icy Silver",
+          "name_ru": "Ледяное серебро",
+          "id": "bright_winter_12",
+          "order": 12,
+          "role": "dark_neutral"
+        }
+      ],
+      "best_metals": [
+        "полированное серебро",
+        "белое золото",
+        "платина",
+        "хром"
+      ],
+      "best_fabrics": [
+        "лак",
+        "сатин",
+        "шелк",
+        "кожа",
+        "гладкий трикотаж"
+      ],
+      "best_prints": [
+        "color block",
+        "оп-арт",
+        "контрастная геометрия",
+        "яркая полоска"
+      ],
+      "base_colors": [
+        "черный",
+        "чистый белый",
+        "кобальтовый",
+        "холодный графит"
+      ],
+      "accent_colors": [
+        "электрический розовый",
+        "чистый красный",
+        "маджента",
+        "яркая бирюза",
+        "кислотный лайм"
+      ],
+      "avoid_colors": [
+        "пыльные пастели",
+        "грязный хаки",
+        "теплый бежевый",
+        "терракота",
+        "горчичный"
+      ],
+      "best_white": "чистый белый",
+      "best_black": "черный",
+      "best_denim": "чистый ярко-синий или черный деним",
+      "best_leather": "черный или яркий холодный цвет",
+      "hair": {
+        "best": [
+          "чистый темный шатен",
+          "черный",
+          "контрастный холодный брюнет"
+        ],
+        "avoid": [
+          "матовый золотистый",
+          "приглушенный медный",
+          "грязный бежевый"
+        ]
+      },
+      "makeup": {
+        "lipstick": [
+          "чистый красный",
+          "электрический розовый",
+          "маджента"
+        ],
+        "blush": [
+          "чистый холодный розовый"
+        ],
+        "eyeshadow": [
+          "серебро",
+          "кобальт",
+          "яркий фиолетовый",
+          "графит"
+        ],
+        "eyeliner": [
+          "черный",
+          "кобальтовый"
+        ]
+      },
+      "display": {
+        "title_ru": "Яркая зима",
+        "title_en": "Bright Winter",
+        "meaning_ru": "Очень чистый, яркий и максимально контрастный колорит.",
+        "card_description": "Самый яркий и контрастный зимний цветотип. Выдерживает чистые насыщенные цвета, резкие сочетания и блеск."
+      },
+      "reference_profile": {
+        "note": "Эталонное положение цветотипа на шкалах 0–100. Не является результатом анализа конкретного человека.",
+        "axes": {
+          "temperature": 30,
+          "depth": 52,
+          "chroma": 98,
+          "contrast": 98
+        },
+        "axis_labels": {
+          "temperature": {
+            "left": "Холодная",
+            "right": "Тёплая"
+          },
+          "depth": {
+            "left": "Светлая",
+            "right": "Глубокая"
+          },
+          "chroma": {
+            "left": "Приглушённая",
+            "right": "Чистая"
+          },
+          "contrast": {
+            "left": "Низкий",
+            "right": "Высокий"
+          }
+        }
+      },
+      "design": {
+        "theme_name_ru": "Контрастный блеск",
+        "primary_color": "#0047AB",
+        "secondary_color": "#E40046",
+        "background_top": "#FFFFFF",
+        "background_bottom": "#EDF3FA",
+        "surface_color": "#FFFFFF",
+        "title_color": "#151B2B",
+        "text_color": "#353B48",
+        "line_color": "#93A8C7",
+        "pin_color": "#E40046",
+        "pin_inner_color": "#FFFFFF",
+        "star_color": "#00A7E1",
+        "sample_border_color": "#0047AB",
+        "shadow_color": "#151B2B1F",
+        "pattern": "electric_sparkles",
+        "background": {
+          "type": "linear_gradient",
+          "top": "#FFFFFF",
+          "bottom": "#EDF3FA"
+        },
+        "scale_pin": {
+          "shape": "circle_with_four_point_star",
+          "diameter_px": 34,
+          "border_width_px": 2,
+          "fill_color": "#FFFFFF",
+          "border_color": "#E40046",
+          "star_color": "#E40046",
+          "shadow": "soft"
+        },
+        "card_radius_px": 28,
+        "palette_card_radius_px": 20
+      },
+      "ui": {
+        "page_1": {
+          "show_photo": true,
+          "show_confidence": true,
+          "show_axes": true,
+          "show_photo_samples": true,
+          "samples": [
+            "eye",
+            "hair",
+            "skin"
+          ],
+          "show_selection_explanation": true
+        },
+        "page_2": {
+          "palette_layout": "cards_3x4",
+          "show_ru_name": true,
+          "show_en_name": false,
+          "show_hex": true,
+          "show_role": false
+        }
+      },
+      "atmosphere": {
+        "name_ru": "Контрастный блеск",
+        "pattern": "electric_sparkles",
+        "intensity": "subtle",
+        "decorative_element": "hand_drawn_stars"
+      },
+      "branding": {
+        "logo_asset_id": "diart_emblem_primary",
+        "logo_required": true,
+        "slogan": "Цвет украшает тебя",
+        "slogan_decoration": "hand_drawn_stars"
+      },
+      "passport": {
+        "page_1_title": "Паспорт цветотипа",
+        "page_2_title": "Твоя палитра",
+        "show_analysis_date": true,
+        "show_passport_id": true,
+        "passport_id_prefix": "BRIGHT-WINTER"
+      }
+    }
+  ],
+  "branding": {
+    "brand_name": "DiArt",
+    "product_name": "DiArt Color Passport",
+    "logo_asset_id": "diart_emblem_primary",
+    "logo_required_on_all_documents": true,
+    "slogan": "Цвет украшает тебя",
+    "slogan_decoration": "hand_drawn_stars",
+    "language_primary": "ru",
+    "language_secondary": "en"
+  },
+  "card_system": {
+    "version": "2.0",
+    "pages": [
+      {
+        "page": 1,
+        "code": "color_type_passport",
+        "title_ru": "Паспорт цветотипа",
+        "purpose": "Анализ внешности и объяснение результата.",
+        "size_px": {
+          "width": 1440,
+          "height": 1920
+        },
+        "blocks": [
+          "brand_header",
+          "client_photo",
+          "color_type_identity",
+          "confidence",
+          "four_axes",
+          "photo_samples",
+          "selection_explanation",
+          "brand_footer"
+        ]
+      },
+      {
+        "page": 2,
+        "code": "personal_palette",
+        "title_ru": "Твоя палитра",
+        "purpose": "12 крупных цветовых карточек с русским названием и HEX-кодом.",
+        "size_px": {
+          "width": 1440,
+          "height": 1920
+        },
+        "blocks": [
+          "brand_header",
+          "palette_intro",
+          "palette_cards_3x4",
+          "palette_usage_note",
+          "brand_footer"
+        ]
+      }
+    ],
+    "excluded_from_pages_1_2": [
+      "макияж",
+      "ткани",
+      "украшения",
+      "цвет волос",
+      "принты",
+      "капсулы и одежда"
+    ],
+    "note": "Перечисленные рекомендации оформляются отдельными специализированными картами."
+  }
+}
