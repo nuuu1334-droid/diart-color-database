@@ -1,0 +1,3640 @@
+{
+  "engine": {
+    "name": "DiArt Color Engine",
+    "version": "2.1",
+    "status": "development_bright_clear_and_value_calibrated",
+    "scope": "12-season personal color analysis from a single portrait photo",
+    "decision_principle": "GPT extracts observable appearance features; the engine scores and selects the season."
+  },
+  "input_schema": {
+    "image": {
+      "face_detected": "boolean",
+      "multiple_faces": "boolean",
+      "image_width_px": "integer",
+      "image_height_px": "integer",
+      "face_coverage": "low|medium|high",
+      "frontal_angle": "frontal|slight_turn|profile|unknown",
+      "glasses": "none|transparent|tinted|unknown",
+      "makeup": "none|light|visible|heavy|unknown",
+      "hair_colored": "yes|no|unknown",
+      "source_type": "camera|screenshot|social_media|unknown"
+    }
+  },
+  "quality_analysis": {
+    "required_checks": [
+      "face_visibility",
+      "lighting_evenness",
+      "white_balance",
+      "image_sharpness",
+      "skin_visibility",
+      "eye_visibility",
+      "hair_visibility",
+      "color_cast",
+      "filters_or_beauty_processing"
+    ],
+    "quality_fields": {
+      "overall_quality": "good|acceptable|poor",
+      "continue_analysis": "boolean",
+      "problems": "array[string]",
+      "limitations": "array[string]"
+    },
+    "hard_stop_conditions": [
+      "face_not_detected",
+      "multiple_faces_without_clear_primary_subject",
+      "extreme_color_filter",
+      "severe_underexposure",
+      "severe_overexposure",
+      "skin_not_visible",
+      "image_too_blurred"
+    ]
+  },
+  "feature_extraction": {
+    "rules": {
+      "observable_only": true,
+      "do_not_infer_ethnicity": true,
+      "do_not_infer_age": true,
+      "do_not_use_clothing_or_background_as_primary_evidence": true,
+      "do_not_treat_colored_hair_as_natural_without_evidence": true,
+      "confidence_required_for_each_feature": true,
+      "unknown_allowed": true
+    },
+    "skin": {
+      "visible": "boolean",
+      "dominant_depth": "very_light|light|light_medium|medium|medium_deep|deep|unknown",
+      "temperature": "warm|cool|neutral_warm|neutral_cool|neutral|uncertain",
+      "undertone_family": [
+        "golden",
+        "yellow",
+        "peach",
+        "olive",
+        "pink",
+        "rosy",
+        "blue_red",
+        "beige_neutral",
+        "uncertain"
+      ],
+      "surface_redness": "none|low|medium|high|unknown",
+      "clarity": "clear|balanced|muted|unknown",
+      "translucency": "low|medium|high|unknown",
+      "evenness": "even|slightly_uneven|uneven|unknown",
+      "freckles": "none|golden_brown|cool_brown|mixed|unknown",
+      "natural_blush": "peach|coral|pink|rose|red|not_visible|unknown",
+      "observed_hex": "string|null",
+      "confidence": "0..1",
+      "notes": "string"
+    },
+    "eyes": {
+      "visible": "boolean",
+      "base_color": [
+        "very_light_blue",
+        "blue",
+        "blue_gray",
+        "gray",
+        "green",
+        "gray_green",
+        "hazel",
+        "amber",
+        "light_brown",
+        "medium_brown",
+        "dark_brown",
+        "black_brown",
+        "mixed",
+        "unknown"
+      ],
+      "secondary_colors": "array[string]",
+      "temperature": "warm|cool|neutral_warm|neutral_cool|neutral|uncertain",
+      "clarity": "clear|sparkling|balanced|soft|smoky|deep|unknown",
+      "brightness": "low|medium|high|unknown",
+      "iris_contrast": "low|medium|high|unknown",
+      "limbal_ring": "absent|soft|defined|strong|unknown",
+      "iris_pattern": [
+        "uniform",
+        "sunburst",
+        "radial",
+        "spokes",
+        "flecked",
+        "clouded",
+        "marbled",
+        "mixed",
+        "unknown"
+      ],
+      "golden_flecks": "absent|subtle|visible|dominant|unknown",
+      "cool_gray_veil": "absent|subtle|visible|dominant|unknown",
+      "observed_hex": "string|null",
+      "confidence": "0..1",
+      "notes": "string"
+    },
+    "hair": {
+      "visible": "boolean",
+      "naturalness": "natural|likely_natural|possibly_colored|colored|unknown",
+      "depth": "very_light|light|light_medium|medium|medium_deep|deep|very_deep|unknown",
+      "base_color": [
+        "platinum",
+        "light_blonde",
+        "golden_blonde",
+        "strawberry_blonde",
+        "dark_blonde",
+        "light_brown",
+        "medium_brown",
+        "dark_brown",
+        "soft_black",
+        "black",
+        "red",
+        "auburn",
+        "gray",
+        "mixed",
+        "unknown"
+      ],
+      "temperature": "warm|cool|neutral_warm|neutral_cool|neutral|uncertain",
+      "undertone": [
+        "golden",
+        "honey",
+        "copper",
+        "red",
+        "chestnut",
+        "ash",
+        "smoky",
+        "blue_black",
+        "neutral",
+        "uncertain"
+      ],
+      "clarity": "clear|balanced|muted|unknown",
+      "shine": "low|medium|high|unknown",
+      "natural_highlights": "golden|copper|red|ash|neutral|not_visible|unknown",
+      "observed_hex": "string|null",
+      "confidence": "0..1",
+      "notes": "string"
+    },
+    "eyebrows": {
+      "visible": "boolean",
+      "depth_relative_to_hair": "lighter|same|darker|unknown",
+      "temperature": "warm|cool|neutral|uncertain",
+      "clarity": "clear|soft|unknown",
+      "confidence": "0..1",
+      "notes": "string"
+    },
+    "lips": {
+      "visible": "boolean",
+      "natural_color": "peach|coral|pink|rose|mauve|berry|brown_rose|neutral|unknown",
+      "temperature": "warm|cool|neutral_warm|neutral_cool|neutral|uncertain",
+      "depth": "light|medium|deep|unknown",
+      "clarity": "clear|balanced|muted|unknown",
+      "confidence": "0..1",
+      "notes": "string"
+    },
+    "contrast": {
+      "skin_hair_contrast": "very_low|low|medium|high|very_high|unknown",
+      "skin_eye_contrast": "very_low|low|medium|high|very_high|unknown",
+      "feature_definition": "soft|moderate|defined|striking|unknown",
+      "overall_contrast": "very_low|low|medium|high|very_high|unknown",
+      "confidence": "0..1",
+      "notes": "string"
+    },
+    "overall_impression": {
+      "dominant_temperature": "warm|cool|neutral_warm|neutral_cool|neutral|uncertain",
+      "dominant_value": "light|medium|deep|uncertain",
+      "dominant_chroma": "bright|clear|balanced|soft|muted|uncertain",
+      "dominant_contrast": "low|medium|high|uncertain",
+      "visual_effect": [
+        "light",
+        "warm",
+        "bright",
+        "clear",
+        "soft",
+        "muted",
+        "cool",
+        "deep",
+        "high_contrast",
+        "balanced",
+        "uncertain"
+      ],
+      "confidence": "0..1",
+      "notes": "string"
+    }
+  },
+  "season_scoring": {
+    "status": "implemented_base_dimensions",
+    "score_range": {
+      "minimum": 0,
+      "maximum": 100
+    },
+    "normalization": {
+      "method": "weighted_sum_then_scale_to_100",
+      "unknown_feature_handling": "ignore_rule_and_renormalize_available_weights",
+      "contradiction_handling": "subtract_penalty_without_dropping_below_zero"
+    },
+    "dimensions": {
+      "temperature": {
+        "weight": 0.3,
+        "values": [
+          "warm",
+          "neutral_warm",
+          "neutral",
+          "neutral_cool",
+          "cool",
+          "uncertain"
+        ]
+      },
+      "value": {
+        "weight": 0.25,
+        "values": [
+          "light",
+          "medium",
+          "deep",
+          "uncertain"
+        ]
+      },
+      "chroma": {
+        "weight": 0.25,
+        "values": [
+          "bright",
+          "clear",
+          "balanced",
+          "soft",
+          "muted",
+          "uncertain"
+        ]
+      },
+      "contrast": {
+        "weight": 0.2,
+        "values": [
+          "low",
+          "medium",
+          "high",
+          "uncertain"
+        ]
+      }
+    },
+    "season_profiles": {
+      "light_spring": {
+        "temperature": {
+          "target": "neutral_warm",
+          "accepted": [
+            "warm",
+            "neutral_warm"
+          ]
+        },
+        "value": {
+          "target": "light",
+          "accepted": [
+            "light"
+          ]
+        },
+        "chroma": {
+          "target": "clear",
+          "accepted": [
+            "clear",
+            "balanced"
+          ]
+        },
+        "contrast": {
+          "target": "low",
+          "accepted": [
+            "low",
+            "medium"
+          ]
+        }
+      },
+      "true_spring": {
+        "temperature": {
+          "target": "warm",
+          "accepted": [
+            "warm"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "light",
+            "medium"
+          ]
+        },
+        "chroma": {
+          "target": "clear",
+          "accepted": [
+            "clear",
+            "bright"
+          ]
+        },
+        "contrast": {
+          "target": "medium",
+          "accepted": [
+            "medium"
+          ]
+        }
+      },
+      "bright_spring": {
+        "temperature": {
+          "target": "neutral_warm",
+          "accepted": [
+            "warm",
+            "neutral_warm"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "light",
+            "medium"
+          ]
+        },
+        "chroma": {
+          "target": "bright",
+          "accepted": [
+            "bright",
+            "clear"
+          ]
+        },
+        "contrast": {
+          "target": "high",
+          "accepted": [
+            "medium",
+            "high"
+          ]
+        }
+      },
+      "light_summer": {
+        "temperature": {
+          "target": "neutral_cool",
+          "accepted": [
+            "neutral_cool",
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "light",
+          "accepted": [
+            "light"
+          ]
+        },
+        "chroma": {
+          "target": "soft",
+          "accepted": [
+            "soft",
+            "balanced"
+          ]
+        },
+        "contrast": {
+          "target": "low",
+          "accepted": [
+            "low",
+            "medium"
+          ]
+        }
+      },
+      "true_summer": {
+        "temperature": {
+          "target": "cool",
+          "accepted": [
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "light",
+            "medium"
+          ]
+        },
+        "chroma": {
+          "target": "soft",
+          "accepted": [
+            "soft",
+            "muted"
+          ]
+        },
+        "contrast": {
+          "target": "medium",
+          "accepted": [
+            "low",
+            "medium"
+          ]
+        }
+      },
+      "soft_summer": {
+        "temperature": {
+          "target": "neutral_cool",
+          "accepted": [
+            "neutral_cool",
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "medium"
+          ]
+        },
+        "chroma": {
+          "target": "muted",
+          "accepted": [
+            "soft",
+            "muted"
+          ]
+        },
+        "contrast": {
+          "target": "low",
+          "accepted": [
+            "low",
+            "medium"
+          ]
+        }
+      },
+      "soft_autumn": {
+        "temperature": {
+          "target": "neutral_warm",
+          "accepted": [
+            "neutral_warm",
+            "warm"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "medium"
+          ]
+        },
+        "chroma": {
+          "target": "muted",
+          "accepted": [
+            "soft",
+            "muted"
+          ]
+        },
+        "contrast": {
+          "target": "low",
+          "accepted": [
+            "low",
+            "medium"
+          ]
+        }
+      },
+      "true_autumn": {
+        "temperature": {
+          "target": "warm",
+          "accepted": [
+            "warm"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "medium",
+            "deep"
+          ]
+        },
+        "chroma": {
+          "target": "balanced",
+          "accepted": [
+            "balanced",
+            "muted"
+          ]
+        },
+        "contrast": {
+          "target": "medium",
+          "accepted": [
+            "medium"
+          ]
+        }
+      },
+      "deep_autumn": {
+        "temperature": {
+          "target": "neutral_warm",
+          "accepted": [
+            "warm",
+            "neutral_warm"
+          ]
+        },
+        "value": {
+          "target": "deep",
+          "accepted": [
+            "deep"
+          ]
+        },
+        "chroma": {
+          "target": "balanced",
+          "accepted": [
+            "balanced",
+            "muted"
+          ]
+        },
+        "contrast": {
+          "target": "high",
+          "accepted": [
+            "medium",
+            "high"
+          ]
+        }
+      },
+      "bright_winter": {
+        "temperature": {
+          "target": "neutral_cool",
+          "accepted": [
+            "neutral_cool",
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "medium",
+            "deep"
+          ]
+        },
+        "chroma": {
+          "target": "bright",
+          "accepted": [
+            "bright",
+            "clear"
+          ]
+        },
+        "contrast": {
+          "target": "high",
+          "accepted": [
+            "high"
+          ]
+        }
+      },
+      "true_winter": {
+        "temperature": {
+          "target": "cool",
+          "accepted": [
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "deep",
+          "accepted": [
+            "medium",
+            "deep"
+          ]
+        },
+        "chroma": {
+          "target": "clear",
+          "accepted": [
+            "clear",
+            "bright"
+          ]
+        },
+        "contrast": {
+          "target": "high",
+          "accepted": [
+            "high"
+          ]
+        }
+      },
+      "deep_winter": {
+        "temperature": {
+          "target": "neutral_cool",
+          "accepted": [
+            "neutral_cool",
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "deep",
+          "accepted": [
+            "deep"
+          ]
+        },
+        "chroma": {
+          "target": "balanced",
+          "accepted": [
+            "balanced",
+            "clear"
+          ]
+        },
+        "contrast": {
+          "target": "high",
+          "accepted": [
+            "high"
+          ]
+        }
+      }
+    },
+    "match_points": {
+      "exact_target": 1.0,
+      "accepted_value": 0.75,
+      "adjacent_value": 0.4,
+      "opposite_value": 0.0,
+      "uncertain": null
+    },
+    "adjacency": {
+      "temperature": {
+        "warm": [
+          "neutral_warm"
+        ],
+        "neutral_warm": [
+          "warm",
+          "neutral"
+        ],
+        "neutral": [
+          "neutral_warm",
+          "neutral_cool"
+        ],
+        "neutral_cool": [
+          "neutral",
+          "cool"
+        ],
+        "cool": [
+          "neutral_cool"
+        ]
+      },
+      "value": {
+        "light": [
+          "medium"
+        ],
+        "medium": [
+          "light",
+          "deep"
+        ],
+        "deep": [
+          "medium"
+        ]
+      },
+      "chroma": {
+        "bright": [
+          "clear"
+        ],
+        "clear": [
+          "bright",
+          "balanced"
+        ],
+        "balanced": [
+          "clear",
+          "soft"
+        ],
+        "soft": [
+          "balanced",
+          "muted"
+        ],
+        "muted": [
+          "soft"
+        ]
+      },
+      "contrast": {
+        "low": [
+          "medium"
+        ],
+        "medium": [
+          "low",
+          "high"
+        ],
+        "high": [
+          "medium"
+        ]
+      }
+    },
+    "feature_sources": {
+      "temperature": [
+        "temperature_engine.output.classification",
+        "feature_extraction.overall_impression.dominant_temperature"
+      ],
+      "value": [
+        "value_engine.output.classification",
+        "feature_extraction.overall_impression.dominant_value"
+      ],
+      "chroma": [
+        "chroma_engine.output.classification",
+        "feature_extraction.overall_impression.dominant_chroma"
+      ],
+      "contrast": [
+        "contrast_engine.output.classification",
+        "feature_extraction.overall_impression.dominant_contrast"
+      ]
+    },
+    "dimension_confidence": {
+      "method": "weighted_average_of_available_feature_confidences",
+      "minimum_for_use": 0.4
+    },
+    "ranking_rules": {
+      "primary_sort": "normalized_score_desc",
+      "secondary_sort": "dimension_confidence_desc",
+      "minimum_gap_for_clear_winner": 8,
+      "close_result_threshold": 5,
+      "top_candidates": 3
+    },
+    "temperature_dependency": {
+      "primary_source": "temperature_engine.output.classification",
+      "fallback_source": "feature_extraction.overall_impression.dominant_temperature",
+      "minimum_temperature_engine_confidence": 0.45
+    },
+    "value_dependency": {
+      "primary_source": "value_engine.output.classification",
+      "fallback_source": "feature_extraction.overall_impression.dominant_value",
+      "minimum_value_engine_confidence": 0.45
+    },
+    "chroma_dependency": {
+      "primary_source": "chroma_engine.output.classification",
+      "fallback_source": "feature_extraction.overall_impression.dominant_chroma",
+      "minimum_chroma_engine_confidence": 0.45
+    },
+    "contrast_dependency": {
+      "primary_source": "contrast_engine.output.classification",
+      "fallback_source": "feature_extraction.overall_impression.dominant_contrast",
+      "minimum_contrast_engine_confidence": 0.45
+    },
+    "exclusion_dependency": {
+      "module": "exclusion_rules",
+      "apply_after": "base_dimension_scoring",
+      "apply_before": "confusion_resolution"
+    }
+  },
+  "confusion_resolution": {
+    "status": "implemented_v1",
+    "purpose": "Resolve close results between commonly confused neighboring seasons after base scoring and exclusion rules have been applied.",
+    "trigger": {
+      "top_two_score_gap_max": 8,
+      "top_two_confidence_min": 0.45,
+      "skip_when": [
+        "quality_analysis_continue_analysis_false",
+        "both_candidates_hard_excluded",
+        "one_candidate_score_below_35"
+      ]
+    },
+    "decision_scale": {
+      "major_evidence": 3,
+      "moderate_evidence": 2,
+      "minor_evidence": 1,
+      "contradiction": -2
+    },
+    "rules": {
+      "light_spring_vs_light_summer": {
+        "candidate_a": "light_spring",
+        "candidate_b": "light_summer",
+        "primary_axis": "temperature",
+        "secondary_axes": [
+          "chroma",
+          "feature_blending"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "temperature in [warm, neutral_warm]",
+            "points": 3,
+            "reason": "Light Spring requires a warm or neutral-warm direction."
+          },
+          {
+            "condition": "skin.undertone_family in [golden, yellow, peach]",
+            "points": 2,
+            "reason": "Golden or peach undertone supports Light Spring."
+          },
+          {
+            "condition": "chroma in [clear, balanced]",
+            "points": 2,
+            "reason": "Light Spring is fresher and clearer."
+          },
+          {
+            "condition": "eyes.golden_flecks in [visible, dominant]",
+            "points": 1,
+            "reason": "Warm eye details support Light Spring."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "temperature in [cool, neutral_cool]",
+            "points": 3,
+            "reason": "Light Summer requires a cool or neutral-cool direction."
+          },
+          {
+            "condition": "skin.undertone_family in [pink, rosy, beige_neutral]",
+            "points": 2,
+            "reason": "Cool pink or neutral-cool skin supports Light Summer."
+          },
+          {
+            "condition": "chroma in [soft, balanced]",
+            "points": 2,
+            "reason": "Light Summer is softer and more blended."
+          },
+          {
+            "condition": "eyes.cool_gray_veil in [visible, dominant]",
+            "points": 1,
+            "reason": "Cool gray veil supports Light Summer."
+          }
+        ],
+        "tie_breaker": "temperature_engine_confidence"
+      },
+      "true_spring_vs_bright_spring": {
+        "candidate_a": "true_spring",
+        "candidate_b": "bright_spring",
+        "primary_axis": "chroma",
+        "secondary_axes": [
+          "contrast",
+          "temperature"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "temperature == warm",
+            "points": 3,
+            "reason": "True Spring is more purely warm."
+          },
+          {
+            "condition": "chroma == clear",
+            "points": 2,
+            "reason": "True Spring is clear but not necessarily extreme."
+          },
+          {
+            "condition": "contrast == medium",
+            "points": 2,
+            "reason": "True Spring usually has medium contrast."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "chroma == bright",
+            "points": 3,
+            "reason": "Bright Spring is defined by brightness."
+          },
+          {
+            "condition": "contrast == high",
+            "points": 2,
+            "reason": "Higher contrast supports Bright Spring."
+          },
+          {
+            "condition": "temperature == neutral_warm",
+            "points": 1,
+            "reason": "Bright Spring may lean less purely warm than True Spring."
+          },
+          {
+            "condition": "feature_definition in [defined, striking]",
+            "points": 2,
+            "reason": "Sharp feature definition supports Bright Spring."
+          }
+        ],
+        "tie_breaker": "chroma_engine_confidence"
+      },
+      "soft_summer_vs_soft_autumn": {
+        "candidate_a": "soft_summer",
+        "candidate_b": "soft_autumn",
+        "primary_axis": "temperature",
+        "secondary_axes": [
+          "undertone",
+          "hair_temperature"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "temperature in [cool, neutral_cool]",
+            "points": 3,
+            "reason": "Soft Summer is the cool-neutral Soft season."
+          },
+          {
+            "condition": "hair.undertone in [ash, smoky]",
+            "points": 2,
+            "reason": "Ash or smoky hair supports Soft Summer."
+          },
+          {
+            "condition": "skin.undertone_family in [pink, rosy, beige_neutral]",
+            "points": 2,
+            "reason": "Cool or neutral-cool skin supports Soft Summer."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "temperature in [warm, neutral_warm]",
+            "points": 3,
+            "reason": "Soft Autumn is the warm-neutral Soft season."
+          },
+          {
+            "condition": "hair.undertone in [golden, honey, chestnut]",
+            "points": 2,
+            "reason": "Warm muted hair supports Soft Autumn."
+          },
+          {
+            "condition": "skin.undertone_family in [golden, yellow, peach, olive]",
+            "points": 2,
+            "reason": "Warm or olive skin supports Soft Autumn."
+          }
+        ],
+        "tie_breaker": "temperature_engine_confidence"
+      },
+      "true_summer_vs_true_winter": {
+        "candidate_a": "true_summer",
+        "candidate_b": "true_winter",
+        "primary_axis": "contrast",
+        "secondary_axes": [
+          "chroma",
+          "value"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "contrast in [low, medium]",
+            "points": 3,
+            "reason": "True Summer is softer and less contrasted."
+          },
+          {
+            "condition": "chroma in [soft, muted]",
+            "points": 3,
+            "reason": "Softness strongly supports True Summer."
+          },
+          {
+            "condition": "feature_definition in [soft, moderate]",
+            "points": 2,
+            "reason": "Blended feature definition supports True Summer."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "contrast == high",
+            "points": 3,
+            "reason": "True Winter requires strong contrast."
+          },
+          {
+            "condition": "chroma in [clear, bright]",
+            "points": 3,
+            "reason": "Clear chroma supports True Winter."
+          },
+          {
+            "condition": "feature_definition in [defined, striking]",
+            "points": 2,
+            "reason": "Sharp definition supports True Winter."
+          },
+          {
+            "condition": "value == deep",
+            "points": 1,
+            "reason": "Depth supports True Winter over True Summer."
+          }
+        ],
+        "tie_breaker": "contrast_engine_confidence"
+      },
+      "bright_spring_vs_bright_winter": {
+        "candidate_a": "bright_spring",
+        "candidate_b": "bright_winter",
+        "primary_axis": "temperature",
+        "secondary_axes": [
+          "skin_undertone",
+          "hair_undertone"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "temperature in [warm, neutral_warm]",
+            "points": 3,
+            "reason": "Bright Spring is the warm Bright season."
+          },
+          {
+            "condition": "skin.undertone_family in [golden, yellow, peach]",
+            "points": 2,
+            "reason": "Warm skin supports Bright Spring."
+          },
+          {
+            "condition": "hair.undertone in [golden, honey, copper, chestnut]",
+            "points": 2,
+            "reason": "Warm hair supports Bright Spring."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "temperature in [cool, neutral_cool]",
+            "points": 3,
+            "reason": "Bright Winter is the cool Bright season."
+          },
+          {
+            "condition": "skin.undertone_family in [pink, rosy, blue_red]",
+            "points": 2,
+            "reason": "Cool skin supports Bright Winter."
+          },
+          {
+            "condition": "hair.undertone in [ash, smoky, blue_black]",
+            "points": 2,
+            "reason": "Cool hair supports Bright Winter."
+          }
+        ],
+        "tie_breaker": "temperature_engine_confidence"
+      },
+      "deep_autumn_vs_deep_winter": {
+        "candidate_a": "deep_autumn",
+        "candidate_b": "deep_winter",
+        "primary_axis": "temperature",
+        "secondary_axes": [
+          "hair_undertone",
+          "skin_undertone",
+          "chroma"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "temperature in [warm, neutral_warm]",
+            "points": 3,
+            "reason": "Deep Autumn is the warm Deep season."
+          },
+          {
+            "condition": "hair.undertone in [chestnut, copper, red, golden]",
+            "points": 2,
+            "reason": "Warm depth supports Deep Autumn."
+          },
+          {
+            "condition": "skin.undertone_family in [golden, yellow, peach, olive]",
+            "points": 2,
+            "reason": "Warm or olive skin supports Deep Autumn."
+          },
+          {
+            "condition": "chroma in [balanced, muted]",
+            "points": 1,
+            "reason": "Slightly softened depth supports Deep Autumn."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "temperature in [cool, neutral_cool]",
+            "points": 3,
+            "reason": "Deep Winter is the cool Deep season."
+          },
+          {
+            "condition": "hair.undertone in [ash, smoky, blue_black]",
+            "points": 2,
+            "reason": "Cool depth supports Deep Winter."
+          },
+          {
+            "condition": "skin.undertone_family in [pink, rosy, blue_red, beige_neutral]",
+            "points": 2,
+            "reason": "Cool or neutral-cool skin supports Deep Winter."
+          },
+          {
+            "condition": "chroma in [balanced, clear]",
+            "points": 1,
+            "reason": "Cleaner depth supports Deep Winter."
+          }
+        ],
+        "tie_breaker": "temperature_engine_confidence"
+      }
+    },
+    "generic_neighbor_rule": {
+      "when_no_specific_pair_rule": true,
+      "method": "Compare candidates across temperature, value, chroma, and contrast. Use the dimension with the largest profile difference as the primary tie-breaker.",
+      "minimum_decision_margin": 2
+    },
+    "result_schema": {
+      "candidate_a": "string",
+      "candidate_b": "string",
+      "candidate_a_points": "number",
+      "candidate_b_points": "number",
+      "winner": "string|null",
+      "decision_margin": "number",
+      "confidence": "0..1",
+      "applied_evidence": "array[object]",
+      "unresolved": "boolean",
+      "reason": "string"
+    }
+  },
+  "season_selection": {
+    "status": "implemented_v1",
+    "selection_order": [
+      "remove_hard_excluded_seasons",
+      "sort_by_score_after_exclusions",
+      "run_confusion_resolution_if_triggered",
+      "select_best_match",
+      "select_second_match",
+      "select_third_match"
+    ],
+    "winner_rules": {
+      "clear_winner": {
+        "minimum_score": 60,
+        "minimum_gap_to_second": 8
+      },
+      "probable_winner": {
+        "minimum_score": 50,
+        "minimum_gap_to_second": 4
+      },
+      "close_result": {
+        "maximum_gap_to_second": 3,
+        "action": "return_best_and_second_with_reduced_confidence"
+      },
+      "insufficient_result": {
+        "when": [
+          "best_score_below_40",
+          "all_candidates_hard_excluded",
+          "overall_engine_confidence_below_0.40"
+        ],
+        "action": "return_no_final_season_and_request_better_photo"
+      }
+    }
+  },
+  "confidence": {
+    "status": "not_implemented"
+  },
+  "output_schema": {
+    "quality": {
+      "overall_quality": "good|acceptable|poor",
+      "continue_analysis": "boolean",
+      "problems": "array[string]"
+    },
+    "features": "feature_extraction_result",
+    "ranking": [
+      {
+        "season_id": "string",
+        "score": "number",
+        "confidence": "0..1"
+      }
+    ],
+    "best_match": "string|null",
+    "second_match": "string|null",
+    "reasoning": "array[string]",
+    "excluded": "array[string]"
+  },
+  "temperature_engine": {
+    "status": "implemented_v1",
+    "purpose": "Estimate warm/cool direction from observable facial features before season scoring. The module does not assign a season by itself.",
+    "output": {
+      "warm_score": "0..100",
+      "cool_score": "0..100",
+      "neutral_score": "0..100",
+      "classification": "warm|neutral_warm|neutral|neutral_cool|cool|uncertain",
+      "confidence": "0..1",
+      "evidence": "array[object]",
+      "conflicts": "array[string]"
+    },
+    "evidence_priority": [
+      {
+        "source": "skin",
+        "weight": 0.5,
+        "reason": "Primary evidence when lighting and white balance are acceptable."
+      },
+      {
+        "source": "lips",
+        "weight": 0.15,
+        "reason": "Useful secondary evidence when natural lip color is visible."
+      },
+      {
+        "source": "eyes",
+        "weight": 0.15,
+        "reason": "Useful as supporting evidence, not decisive by itself."
+      },
+      {
+        "source": "hair",
+        "weight": 0.15,
+        "reason": "Use only when hair appears natural or likely natural."
+      },
+      {
+        "source": "eyebrows",
+        "weight": 0.05,
+        "reason": "Low-weight supporting evidence."
+      }
+    ],
+    "global_rules": {
+      "minimum_total_evidence_weight": 0.35,
+      "minimum_skin_confidence_for_primary_use": 0.55,
+      "ignore_hair_when": [
+        "hair_colored",
+        "possibly_colored_with_low_confidence",
+        "strong_artificial_highlights",
+        "hair_not_visible"
+      ],
+      "reduce_skin_weight_when": [
+        "white_balance_uncertain",
+        "strong_color_cast",
+        "heavy_makeup",
+        "overexposed_skin",
+        "underexposed_skin"
+      ],
+      "never_use_as_single_decisive_evidence": [
+        "eye_color_name",
+        "hair_color_name",
+        "surface_redness",
+        "golden_flecks",
+        "freckles"
+      ],
+      "unknown_handling": "Ignore unknown fields and renormalize available source weights.",
+      "conflict_handling": "If warm and cool evidence differ by less than 10 points, classify as neutral or uncertain depending on total confidence."
+    },
+    "skin_rules": {
+      "temperature": {
+        "warm": {
+          "warm": 1.0,
+          "cool": 0.0
+        },
+        "neutral_warm": {
+          "warm": 0.75,
+          "cool": 0.15
+        },
+        "neutral": {
+          "warm": 0.35,
+          "cool": 0.35
+        },
+        "neutral_cool": {
+          "warm": 0.15,
+          "cool": 0.75
+        },
+        "cool": {
+          "warm": 0.0,
+          "cool": 1.0
+        },
+        "uncertain": null
+      },
+      "undertone_family": {
+        "golden": {
+          "warm": 0.9,
+          "cool": 0.05
+        },
+        "yellow": {
+          "warm": 0.8,
+          "cool": 0.1
+        },
+        "peach": {
+          "warm": 0.75,
+          "cool": 0.15
+        },
+        "olive": {
+          "warm": 0.45,
+          "cool": 0.25,
+          "neutral": 0.3
+        },
+        "pink": {
+          "warm": 0.15,
+          "cool": 0.7
+        },
+        "rosy": {
+          "warm": 0.2,
+          "cool": 0.65
+        },
+        "blue_red": {
+          "warm": 0.05,
+          "cool": 0.9
+        },
+        "beige_neutral": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "uncertain": null
+      },
+      "natural_blush": {
+        "peach": {
+          "warm": 0.7,
+          "cool": 0.1
+        },
+        "coral": {
+          "warm": 0.75,
+          "cool": 0.1
+        },
+        "pink": {
+          "warm": 0.2,
+          "cool": 0.6
+        },
+        "rose": {
+          "warm": 0.2,
+          "cool": 0.65
+        },
+        "red": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "not_visible": null,
+        "unknown": null
+      },
+      "freckles": {
+        "golden_brown": {
+          "warm": 0.55,
+          "cool": 0.1
+        },
+        "cool_brown": {
+          "warm": 0.15,
+          "cool": 0.5
+        },
+        "mixed": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "none": null,
+        "unknown": null
+      },
+      "internal_weights": {
+        "temperature": 0.55,
+        "undertone_family": 0.3,
+        "natural_blush": 0.1,
+        "freckles": 0.05
+      },
+      "penalties": {
+        "surface_redness_as_cool_proof": -1.0,
+        "tan_as_warm_proof": -1.0,
+        "makeup_tone_as_natural_undertone": -1.0
+      }
+    },
+    "lips_rules": {
+      "temperature": {
+        "warm": {
+          "warm": 1.0,
+          "cool": 0.0
+        },
+        "neutral_warm": {
+          "warm": 0.75,
+          "cool": 0.15
+        },
+        "neutral": {
+          "warm": 0.35,
+          "cool": 0.35
+        },
+        "neutral_cool": {
+          "warm": 0.15,
+          "cool": 0.75
+        },
+        "cool": {
+          "warm": 0.0,
+          "cool": 1.0
+        },
+        "uncertain": null
+      },
+      "natural_color": {
+        "peach": {
+          "warm": 0.75,
+          "cool": 0.1
+        },
+        "coral": {
+          "warm": 0.8,
+          "cool": 0.05
+        },
+        "pink": {
+          "warm": 0.25,
+          "cool": 0.55
+        },
+        "rose": {
+          "warm": 0.2,
+          "cool": 0.65
+        },
+        "mauve": {
+          "warm": 0.1,
+          "cool": 0.8
+        },
+        "berry": {
+          "warm": 0.15,
+          "cool": 0.75
+        },
+        "brown_rose": {
+          "warm": 0.45,
+          "cool": 0.35
+        },
+        "neutral": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "unknown": null
+      },
+      "internal_weights": {
+        "temperature": 0.7,
+        "natural_color": 0.3
+      }
+    },
+    "eyes_rules": {
+      "temperature": {
+        "warm": {
+          "warm": 1.0,
+          "cool": 0.0
+        },
+        "neutral_warm": {
+          "warm": 0.75,
+          "cool": 0.15
+        },
+        "neutral": {
+          "warm": 0.35,
+          "cool": 0.35
+        },
+        "neutral_cool": {
+          "warm": 0.15,
+          "cool": 0.75
+        },
+        "cool": {
+          "warm": 0.0,
+          "cool": 1.0
+        },
+        "uncertain": null
+      },
+      "supporting_markers": {
+        "golden_flecks_visible": {
+          "warm": 0.35,
+          "cool": 0.05
+        },
+        "golden_flecks_dominant": {
+          "warm": 0.5,
+          "cool": 0.05
+        },
+        "cool_gray_veil_visible": {
+          "warm": 0.05,
+          "cool": 0.4
+        },
+        "cool_gray_veil_dominant": {
+          "warm": 0.05,
+          "cool": 0.55
+        }
+      },
+      "base_color_note": "Base eye color must not determine temperature alone. Blue eyes can be warm-neutral; brown eyes can be cool-neutral.",
+      "internal_weights": {
+        "temperature": 0.75,
+        "golden_flecks": 0.125,
+        "cool_gray_veil": 0.125
+      }
+    },
+    "hair_rules": {
+      "temperature": {
+        "warm": {
+          "warm": 1.0,
+          "cool": 0.0
+        },
+        "neutral_warm": {
+          "warm": 0.75,
+          "cool": 0.15
+        },
+        "neutral": {
+          "warm": 0.35,
+          "cool": 0.35
+        },
+        "neutral_cool": {
+          "warm": 0.15,
+          "cool": 0.75
+        },
+        "cool": {
+          "warm": 0.0,
+          "cool": 1.0
+        },
+        "uncertain": null
+      },
+      "undertone": {
+        "golden": {
+          "warm": 0.8,
+          "cool": 0.05
+        },
+        "honey": {
+          "warm": 0.8,
+          "cool": 0.05
+        },
+        "copper": {
+          "warm": 0.9,
+          "cool": 0.0
+        },
+        "red": {
+          "warm": 0.75,
+          "cool": 0.1
+        },
+        "chestnut": {
+          "warm": 0.65,
+          "cool": 0.15
+        },
+        "ash": {
+          "warm": 0.05,
+          "cool": 0.85
+        },
+        "smoky": {
+          "warm": 0.1,
+          "cool": 0.7
+        },
+        "blue_black": {
+          "warm": 0.0,
+          "cool": 0.9
+        },
+        "neutral": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "uncertain": null
+      },
+      "natural_highlights": {
+        "golden": {
+          "warm": 0.65,
+          "cool": 0.05
+        },
+        "copper": {
+          "warm": 0.8,
+          "cool": 0.0
+        },
+        "red": {
+          "warm": 0.7,
+          "cool": 0.1
+        },
+        "ash": {
+          "warm": 0.05,
+          "cool": 0.75
+        },
+        "neutral": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "not_visible": null,
+        "unknown": null
+      },
+      "internal_weights": {
+        "temperature": 0.55,
+        "undertone": 0.3,
+        "natural_highlights": 0.15
+      }
+    },
+    "eyebrows_rules": {
+      "temperature": {
+        "warm": {
+          "warm": 0.7,
+          "cool": 0.1
+        },
+        "cool": {
+          "warm": 0.1,
+          "cool": 0.7
+        },
+        "neutral": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "uncertain": null
+      }
+    },
+    "classification_thresholds": {
+      "warm": {
+        "minimum_warm_score": 65,
+        "minimum_gap_over_cool": 20
+      },
+      "neutral_warm": {
+        "minimum_warm_score": 52,
+        "minimum_gap_over_cool": 8
+      },
+      "neutral": {
+        "maximum_gap_between_warm_and_cool": 7,
+        "minimum_total_confidence": 0.5
+      },
+      "neutral_cool": {
+        "minimum_cool_score": 52,
+        "minimum_gap_over_warm": 8
+      },
+      "cool": {
+        "minimum_cool_score": 65,
+        "minimum_gap_over_warm": 20
+      },
+      "uncertain": {
+        "when": [
+          "total_evidence_weight_below_minimum",
+          "total_confidence_below_0.40",
+          "strong_feature_conflicts",
+          "quality_analysis_continue_analysis_false"
+        ]
+      }
+    },
+    "confidence_rules": {
+      "base": "weighted_mean_of_used_feature_confidences",
+      "quality_multipliers": {
+        "good": 1.0,
+        "acceptable": 0.8,
+        "poor": 0.0
+      },
+      "conflict_penalty": {
+        "none": 0.0,
+        "moderate": 0.1,
+        "strong": 0.25
+      },
+      "hair_colored_penalty": 0.05,
+      "heavy_makeup_penalty": 0.1,
+      "white_balance_uncertain_penalty": 0.15
+    },
+    "evidence_log_schema": {
+      "source": "skin|lips|eyes|hair|eyebrows",
+      "field": "string",
+      "observed_value": "string",
+      "warm_contribution": "number",
+      "cool_contribution": "number",
+      "neutral_contribution": "number",
+      "weight_used": "number",
+      "feature_confidence": "0..1",
+      "note": "string"
+    }
+  },
+  "value_engine": {
+    "status": "implemented_v1",
+    "purpose": "Estimate the overall lightness/depth of appearance from observable skin, natural hair, eyes, and feature contrast before season scoring.",
+    "output": {
+      "light_score": "0..100",
+      "medium_score": "0..100",
+      "deep_score": "0..100",
+      "classification": "light|medium|deep|uncertain",
+      "confidence": "0..1",
+      "evidence": "array[object]",
+      "conflicts": "array[string]"
+    },
+    "evidence_priority": [
+      {
+        "source": "skin",
+        "weight": 0.35,
+        "reason": "Stable primary evidence when exposure and skin visibility are acceptable."
+      },
+      {
+        "source": "hair",
+        "weight": 0.4,
+        "reason": "Strong evidence only when hair is natural or likely natural."
+      },
+      {
+        "source": "eyes",
+        "weight": 0.15,
+        "reason": "Supporting evidence for overall depth."
+      },
+      {
+        "source": "eyebrows",
+        "weight": 0.05,
+        "reason": "Low-weight supporting evidence."
+      },
+      {
+        "source": "overall_impression",
+        "weight": 0.05,
+        "reason": "Used only as a cross-check, not as a substitute for observed features."
+      }
+    ],
+    "global_rules": {
+      "minimum_total_evidence_weight": 0.35,
+      "minimum_confidence_for_source_use": 0.4,
+      "unknown_handling": "Ignore unknown fields and renormalize available source weights.",
+      "hair_handling": {
+        "natural": 1.0,
+        "likely_natural": 0.85,
+        "possibly_colored": 0.45,
+        "colored": 0.0,
+        "unknown": 0.35
+      },
+      "exposure_adjustment": {
+        "good": 1.0,
+        "acceptable": 0.8,
+        "overexposed": 0.55,
+        "underexposed": 0.55,
+        "severe_overexposure": 0.0,
+        "severe_underexposure": 0.0
+      },
+      "never_use_as_single_decisive_evidence": [
+        "skin_depth",
+        "hair_depth",
+        "eye_depth",
+        "overall_impression"
+      ],
+      "conflict_handling": "If light and deep evidence are both strong, classify as medium unless one side exceeds the other by at least 18 points."
+    },
+    "mapping": {
+      "skin_depth": {
+        "very_light": {
+          "light": 1.0,
+          "medium": 0.1,
+          "deep": 0.0
+        },
+        "light": {
+          "light": 0.85,
+          "medium": 0.25,
+          "deep": 0.0
+        },
+        "light_medium": {
+          "light": 0.55,
+          "medium": 0.6,
+          "deep": 0.05
+        },
+        "medium": {
+          "light": 0.15,
+          "medium": 1.0,
+          "deep": 0.15
+        },
+        "medium_deep": {
+          "light": 0.05,
+          "medium": 0.6,
+          "deep": 0.55
+        },
+        "deep": {
+          "light": 0.0,
+          "medium": 0.2,
+          "deep": 1.0
+        },
+        "unknown": null
+      },
+      "hair_depth": {
+        "very_light": {
+          "light": 1.0,
+          "medium": 0.1,
+          "deep": 0.0
+        },
+        "light": {
+          "light": 0.85,
+          "medium": 0.25,
+          "deep": 0.0
+        },
+        "light_medium": {
+          "light": 0.55,
+          "medium": 0.6,
+          "deep": 0.05
+        },
+        "medium": {
+          "light": 0.15,
+          "medium": 1.0,
+          "deep": 0.15
+        },
+        "medium_deep": {
+          "light": 0.05,
+          "medium": 0.6,
+          "deep": 0.55
+        },
+        "deep": {
+          "light": 0.0,
+          "medium": 0.2,
+          "deep": 0.9
+        },
+        "very_deep": {
+          "light": 0.0,
+          "medium": 0.05,
+          "deep": 1.0
+        },
+        "unknown": null
+      },
+      "eye_base_color": {
+        "very_light_blue": {
+          "light": 0.9,
+          "medium": 0.15,
+          "deep": 0.0
+        },
+        "blue": {
+          "light": 0.7,
+          "medium": 0.35,
+          "deep": 0.0
+        },
+        "blue_gray": {
+          "light": 0.6,
+          "medium": 0.45,
+          "deep": 0.0
+        },
+        "gray": {
+          "light": 0.5,
+          "medium": 0.5,
+          "deep": 0.05
+        },
+        "green": {
+          "light": 0.4,
+          "medium": 0.6,
+          "deep": 0.1
+        },
+        "gray_green": {
+          "light": 0.4,
+          "medium": 0.6,
+          "deep": 0.1
+        },
+        "hazel": {
+          "light": 0.2,
+          "medium": 0.75,
+          "deep": 0.25
+        },
+        "amber": {
+          "light": 0.2,
+          "medium": 0.7,
+          "deep": 0.3
+        },
+        "light_brown": {
+          "light": 0.15,
+          "medium": 0.75,
+          "deep": 0.3
+        },
+        "medium_brown": {
+          "light": 0.05,
+          "medium": 0.7,
+          "deep": 0.55
+        },
+        "dark_brown": {
+          "light": 0.0,
+          "medium": 0.35,
+          "deep": 0.85
+        },
+        "black_brown": {
+          "light": 0.0,
+          "medium": 0.15,
+          "deep": 1.0
+        },
+        "mixed": {
+          "light": 0.2,
+          "medium": 0.65,
+          "deep": 0.25
+        },
+        "unknown": null
+      },
+      "eye_brightness_modifier": {
+        "high": {
+          "light": 0.1,
+          "medium": 0.0,
+          "deep": -0.05
+        },
+        "medium": {
+          "light": 0.0,
+          "medium": 0.05,
+          "deep": 0.0
+        },
+        "low": {
+          "light": -0.05,
+          "medium": 0.0,
+          "deep": 0.1
+        },
+        "unknown": null
+      },
+      "eyebrow_depth_relative_to_hair": {
+        "lighter": {
+          "light": 0.1,
+          "medium": 0.0,
+          "deep": -0.05
+        },
+        "same": {
+          "light": 0.0,
+          "medium": 0.05,
+          "deep": 0.0
+        },
+        "darker": {
+          "light": -0.05,
+          "medium": 0.0,
+          "deep": 0.1
+        },
+        "unknown": null
+      },
+      "overall_value": {
+        "light": {
+          "light": 1.0,
+          "medium": 0.2,
+          "deep": 0.0
+        },
+        "medium": {
+          "light": 0.15,
+          "medium": 1.0,
+          "deep": 0.15
+        },
+        "deep": {
+          "light": 0.0,
+          "medium": 0.2,
+          "deep": 1.0
+        },
+        "uncertain": null
+      }
+    },
+    "source_rules": {
+      "skin": {
+        "field": "feature_extraction.skin.dominant_depth",
+        "confidence_field": "feature_extraction.skin.confidence"
+      },
+      "hair": {
+        "field": "feature_extraction.hair.depth",
+        "confidence_field": "feature_extraction.hair.confidence",
+        "naturalness_field": "feature_extraction.hair.naturalness"
+      },
+      "eyes": {
+        "base_field": "feature_extraction.eyes.base_color",
+        "brightness_field": "feature_extraction.eyes.brightness",
+        "confidence_field": "feature_extraction.eyes.confidence",
+        "internal_weights": {
+          "base_color": 0.85,
+          "brightness_modifier": 0.15
+        }
+      },
+      "eyebrows": {
+        "field": "feature_extraction.eyebrows.depth_relative_to_hair",
+        "confidence_field": "feature_extraction.eyebrows.confidence"
+      },
+      "overall_impression": {
+        "field": "feature_extraction.overall_impression.dominant_value",
+        "confidence_field": "feature_extraction.overall_impression.confidence"
+      }
+    },
+    "classification_thresholds": {
+      "light": {
+        "minimum_light_score": 60,
+        "minimum_gap_over_deep": 18,
+        "minimum_gap_over_medium": 5
+      },
+      "medium": {
+        "minimum_medium_score": 50,
+        "maximum_light_deep_gap_for_balanced_case": 17
+      },
+      "deep": {
+        "minimum_deep_score": 60,
+        "minimum_gap_over_light": 18,
+        "minimum_gap_over_medium": 5
+      },
+      "uncertain": {
+        "when": [
+          "total_evidence_weight_below_minimum",
+          "total_confidence_below_0.40",
+          "strong_exposure_distortion",
+          "strong_source_conflicts",
+          "quality_analysis_continue_analysis_false"
+        ]
+      }
+    },
+    "confidence_rules": {
+      "base": "weighted_mean_of_used_feature_confidences",
+      "quality_multipliers": {
+        "good": 1.0,
+        "acceptable": 0.8,
+        "poor": 0.0
+      },
+      "exposure_penalty": {
+        "none": 0.0,
+        "moderate": 0.1,
+        "strong": 0.25
+      },
+      "hair_colored_penalty": 0.08,
+      "source_conflict_penalty": {
+        "none": 0.0,
+        "moderate": 0.1,
+        "strong": 0.25
+      }
+    },
+    "season_effects": {
+      "light": {
+        "boost": [
+          "light_spring",
+          "light_summer"
+        ],
+        "penalize": [
+          "deep_autumn",
+          "deep_winter"
+        ]
+      },
+      "medium": {
+        "boost": [
+          "true_spring",
+          "bright_spring",
+          "true_summer",
+          "soft_summer",
+          "soft_autumn",
+          "true_autumn",
+          "bright_winter"
+        ],
+        "penalize": []
+      },
+      "deep": {
+        "boost": [
+          "deep_autumn",
+          "true_winter",
+          "deep_winter"
+        ],
+        "penalize": [
+          "light_spring",
+          "light_summer"
+        ]
+      }
+    },
+    "evidence_log_schema": {
+      "source": "skin|hair|eyes|eyebrows|overall_impression",
+      "field": "string",
+      "observed_value": "string",
+      "light_contribution": "number",
+      "medium_contribution": "number",
+      "deep_contribution": "number",
+      "weight_used": "number",
+      "feature_confidence": "0..1",
+      "note": "string"
+    }
+  },
+  "chroma_engine": {
+    "status": "implemented_v1",
+    "purpose": "Estimate whether the overall appearance is bright, clear, balanced, soft, or muted from observable skin, eyes, hair, lips, and feature definition before season scoring.",
+    "output": {
+      "bright_score": "0..100",
+      "clear_score": "0..100",
+      "balanced_score": "0..100",
+      "soft_score": "0..100",
+      "muted_score": "0..100",
+      "classification": "bright|clear|balanced|soft|muted|uncertain",
+      "confidence": "0..1",
+      "evidence": "array[object]",
+      "conflicts": "array[string]"
+    },
+    "evidence_priority": [
+      {
+        "source": "eyes",
+        "weight": 0.3,
+        "reason": "Eye clarity and iris definition are strong indicators of clear versus muted appearance."
+      },
+      {
+        "source": "skin",
+        "weight": 0.25,
+        "reason": "Skin clarity and translucency support the overall chroma assessment."
+      },
+      {
+        "source": "hair",
+        "weight": 0.2,
+        "reason": "Natural hair clarity and shine are useful when hair is not colored."
+      },
+      {
+        "source": "contrast",
+        "weight": 0.15,
+        "reason": "Feature definition helps separate bright or clear appearance from soft or muted appearance."
+      },
+      {
+        "source": "lips",
+        "weight": 0.05,
+        "reason": "Natural lip clarity is low-weight supporting evidence."
+      },
+      {
+        "source": "overall_impression",
+        "weight": 0.05,
+        "reason": "Used only as a consistency check."
+      }
+    ],
+    "global_rules": {
+      "minimum_total_evidence_weight": 0.35,
+      "minimum_confidence_for_source_use": 0.4,
+      "unknown_handling": "Ignore unknown fields and renormalize available source weights.",
+      "hair_handling": {
+        "natural": 1.0,
+        "likely_natural": 0.85,
+        "possibly_colored": 0.45,
+        "colored": 0.0,
+        "unknown": 0.35
+      },
+      "makeup_handling": {
+        "none": 1.0,
+        "light": 0.9,
+        "visible": 0.65,
+        "heavy": 0.3,
+        "unknown": 0.7
+      },
+      "never_use_as_single_decisive_evidence": [
+        "eye_brightness",
+        "skin_translucency",
+        "hair_shine",
+        "feature_definition",
+        "lip_color"
+      ],
+      "conflict_handling": "If clear or bright evidence and soft or muted evidence are both strong, classify as balanced unless one side exceeds the other by at least 15 points.",
+      "terminology_rule": {
+        "bright": "highest visible chroma and strongest visual impact",
+        "clear": "clean, fresh, defined chroma without necessarily extreme intensity",
+        "balanced": "neither distinctly bright nor distinctly muted",
+        "soft": "gently blended and low-definition appearance",
+        "muted": "clearly greyed, smoky, dusty, or subdued appearance"
+      }
+    },
+    "mapping": {
+      "skin_clarity": {
+        "clear": {
+          "bright": 0.35,
+          "clear": 1.0,
+          "balanced": 0.25,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "balanced": {
+          "bright": 0.1,
+          "clear": 0.25,
+          "balanced": 1.0,
+          "soft": 0.25,
+          "muted": 0.1
+        },
+        "muted": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.2,
+          "soft": 0.65,
+          "muted": 1.0
+        },
+        "unknown": null
+      },
+      "skin_translucency": {
+        "high": {
+          "bright": 0.15,
+          "clear": 0.45,
+          "balanced": 0.1,
+          "soft": 0.05,
+          "muted": 0.0
+        },
+        "medium": {
+          "bright": 0.05,
+          "clear": 0.15,
+          "balanced": 0.45,
+          "soft": 0.15,
+          "muted": 0.05
+        },
+        "low": {
+          "bright": 0.0,
+          "clear": 0.05,
+          "balanced": 0.2,
+          "soft": 0.35,
+          "muted": 0.4
+        },
+        "unknown": null
+      },
+      "eyes_clarity": {
+        "sparkling": {
+          "bright": 1.0,
+          "clear": 0.85,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "clear": {
+          "bright": 0.55,
+          "clear": 1.0,
+          "balanced": 0.2,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "balanced": {
+          "bright": 0.1,
+          "clear": 0.25,
+          "balanced": 1.0,
+          "soft": 0.25,
+          "muted": 0.1
+        },
+        "soft": {
+          "bright": 0.0,
+          "clear": 0.05,
+          "balanced": 0.25,
+          "soft": 1.0,
+          "muted": 0.6
+        },
+        "smoky": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.15,
+          "soft": 0.7,
+          "muted": 1.0
+        },
+        "deep": {
+          "bright": 0.1,
+          "clear": 0.25,
+          "balanced": 0.55,
+          "soft": 0.2,
+          "muted": 0.2
+        },
+        "unknown": null
+      },
+      "eyes_brightness": {
+        "high": {
+          "bright": 0.5,
+          "clear": 0.3,
+          "balanced": 0.05,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "medium": {
+          "bright": 0.1,
+          "clear": 0.15,
+          "balanced": 0.35,
+          "soft": 0.1,
+          "muted": 0.05
+        },
+        "low": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.15,
+          "soft": 0.35,
+          "muted": 0.45
+        },
+        "unknown": null
+      },
+      "iris_contrast": {
+        "high": {
+          "bright": 0.5,
+          "clear": 0.45,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "medium": {
+          "bright": 0.1,
+          "clear": 0.2,
+          "balanced": 0.5,
+          "soft": 0.15,
+          "muted": 0.05
+        },
+        "low": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.15,
+          "soft": 0.5,
+          "muted": 0.55
+        },
+        "unknown": null
+      },
+      "limbal_ring": {
+        "strong": {
+          "bright": 0.45,
+          "clear": 0.5,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "defined": {
+          "bright": 0.2,
+          "clear": 0.4,
+          "balanced": 0.2,
+          "soft": 0.05,
+          "muted": 0.0
+        },
+        "soft": {
+          "bright": 0.0,
+          "clear": 0.1,
+          "balanced": 0.25,
+          "soft": 0.45,
+          "muted": 0.3
+        },
+        "absent": {
+          "bright": 0.0,
+          "clear": 0.05,
+          "balanced": 0.2,
+          "soft": 0.5,
+          "muted": 0.35
+        },
+        "unknown": null
+      },
+      "hair_clarity": {
+        "clear": {
+          "bright": 0.35,
+          "clear": 1.0,
+          "balanced": 0.2,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "balanced": {
+          "bright": 0.1,
+          "clear": 0.25,
+          "balanced": 1.0,
+          "soft": 0.25,
+          "muted": 0.1
+        },
+        "muted": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.2,
+          "soft": 0.65,
+          "muted": 1.0
+        },
+        "unknown": null
+      },
+      "hair_shine": {
+        "high": {
+          "bright": 0.25,
+          "clear": 0.35,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "medium": {
+          "bright": 0.05,
+          "clear": 0.15,
+          "balanced": 0.35,
+          "soft": 0.1,
+          "muted": 0.05
+        },
+        "low": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.15,
+          "soft": 0.35,
+          "muted": 0.4
+        },
+        "unknown": null
+      },
+      "feature_definition": {
+        "striking": {
+          "bright": 1.0,
+          "clear": 0.55,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "defined": {
+          "bright": 0.4,
+          "clear": 0.65,
+          "balanced": 0.3,
+          "soft": 0.05,
+          "muted": 0.0
+        },
+        "moderate": {
+          "bright": 0.1,
+          "clear": 0.2,
+          "balanced": 1.0,
+          "soft": 0.2,
+          "muted": 0.1
+        },
+        "soft": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.2,
+          "soft": 1.0,
+          "muted": 0.7
+        },
+        "unknown": null
+      },
+      "lips_clarity": {
+        "clear": {
+          "bright": 0.25,
+          "clear": 0.65,
+          "balanced": 0.2,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "balanced": {
+          "bright": 0.05,
+          "clear": 0.15,
+          "balanced": 0.55,
+          "soft": 0.15,
+          "muted": 0.05
+        },
+        "muted": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.15,
+          "soft": 0.55,
+          "muted": 0.7
+        },
+        "unknown": null
+      },
+      "overall_chroma": {
+        "bright": {
+          "bright": 1.0,
+          "clear": 0.55,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "clear": {
+          "bright": 0.55,
+          "clear": 1.0,
+          "balanced": 0.2,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "balanced": {
+          "bright": 0.1,
+          "clear": 0.2,
+          "balanced": 1.0,
+          "soft": 0.2,
+          "muted": 0.1
+        },
+        "soft": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.2,
+          "soft": 1.0,
+          "muted": 0.6
+        },
+        "muted": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.1,
+          "soft": 0.65,
+          "muted": 1.0
+        },
+        "uncertain": null
+      }
+    },
+    "source_rules": {
+      "skin": {
+        "clarity_field": "feature_extraction.skin.clarity",
+        "translucency_field": "feature_extraction.skin.translucency",
+        "confidence_field": "feature_extraction.skin.confidence",
+        "internal_weights": {
+          "clarity": 0.8,
+          "translucency": 0.2
+        }
+      },
+      "eyes": {
+        "clarity_field": "feature_extraction.eyes.clarity",
+        "brightness_field": "feature_extraction.eyes.brightness",
+        "iris_contrast_field": "feature_extraction.eyes.iris_contrast",
+        "limbal_ring_field": "feature_extraction.eyes.limbal_ring",
+        "confidence_field": "feature_extraction.eyes.confidence",
+        "internal_weights": {
+          "clarity": 0.5,
+          "brightness": 0.2,
+          "iris_contrast": 0.2,
+          "limbal_ring": 0.1
+        }
+      },
+      "hair": {
+        "clarity_field": "feature_extraction.hair.clarity",
+        "shine_field": "feature_extraction.hair.shine",
+        "confidence_field": "feature_extraction.hair.confidence",
+        "naturalness_field": "feature_extraction.hair.naturalness",
+        "internal_weights": {
+          "clarity": 0.75,
+          "shine": 0.25
+        }
+      },
+      "contrast": {
+        "field": "feature_extraction.contrast.feature_definition",
+        "confidence_field": "feature_extraction.contrast.confidence"
+      },
+      "lips": {
+        "field": "feature_extraction.lips.clarity",
+        "confidence_field": "feature_extraction.lips.confidence"
+      },
+      "overall_impression": {
+        "field": "feature_extraction.overall_impression.dominant_chroma",
+        "confidence_field": "feature_extraction.overall_impression.confidence"
+      }
+    },
+    "classification_thresholds": {
+      "bright": {
+        "minimum_bright_score": 62,
+        "minimum_gap_over_muted": 22,
+        "minimum_gap_over_soft": 15
+      },
+      "clear": {
+        "minimum_clear_score": 58,
+        "minimum_gap_over_muted": 18,
+        "minimum_gap_over_soft": 10
+      },
+      "balanced": {
+        "minimum_balanced_score": 48,
+        "maximum_clear_muted_gap_for_balanced_case": 14
+      },
+      "soft": {
+        "minimum_soft_score": 55,
+        "minimum_gap_over_clear": 10,
+        "minimum_gap_over_bright": 15
+      },
+      "muted": {
+        "minimum_muted_score": 62,
+        "minimum_gap_over_clear": 18,
+        "minimum_gap_over_bright": 22
+      },
+      "uncertain": {
+        "when": [
+          "total_evidence_weight_below_minimum",
+          "total_confidence_below_0.40",
+          "heavy_makeup_and_low_natural_feature_visibility",
+          "strong_source_conflicts",
+          "quality_analysis_continue_analysis_false"
+        ]
+      }
+    },
+    "confidence_rules": {
+      "base": "weighted_mean_of_used_feature_confidences",
+      "quality_multipliers": {
+        "good": 1.0,
+        "acceptable": 0.8,
+        "poor": 0.0
+      },
+      "makeup_penalty": {
+        "none": 0.0,
+        "light": 0.02,
+        "visible": 0.08,
+        "heavy": 0.18,
+        "unknown": 0.05
+      },
+      "hair_colored_penalty": 0.05,
+      "filter_or_beauty_processing_penalty": {
+        "none": 0.0,
+        "possible": 0.1,
+        "visible": 0.2
+      },
+      "source_conflict_penalty": {
+        "none": 0.0,
+        "moderate": 0.1,
+        "strong": 0.25
+      }
+    },
+    "season_effects": {
+      "bright": {
+        "boost": [
+          "bright_spring",
+          "bright_winter"
+        ],
+        "penalize": [
+          "soft_summer",
+          "soft_autumn"
+        ]
+      },
+      "clear": {
+        "boost": [
+          "true_spring",
+          "bright_spring",
+          "bright_winter",
+          "true_winter"
+        ],
+        "penalize": [
+          "soft_summer",
+          "soft_autumn"
+        ]
+      },
+      "balanced": {
+        "boost": [
+          "light_spring",
+          "light_summer",
+          "true_autumn",
+          "deep_autumn",
+          "deep_winter"
+        ],
+        "penalize": []
+      },
+      "soft": {
+        "boost": [
+          "light_summer",
+          "true_summer",
+          "soft_summer",
+          "soft_autumn"
+        ],
+        "penalize": [
+          "bright_spring",
+          "bright_winter"
+        ]
+      },
+      "muted": {
+        "boost": [
+          "soft_summer",
+          "soft_autumn",
+          "true_summer"
+        ],
+        "penalize": [
+          "bright_spring",
+          "bright_winter",
+          "true_spring",
+          "true_winter"
+        ]
+      }
+    },
+    "evidence_log_schema": {
+      "source": "skin|eyes|hair|contrast|lips|overall_impression",
+      "field": "string",
+      "observed_value": "string",
+      "bright_contribution": "number",
+      "clear_contribution": "number",
+      "balanced_contribution": "number",
+      "soft_contribution": "number",
+      "muted_contribution": "number",
+      "weight_used": "number",
+      "feature_confidence": "0..1",
+      "note": "string"
+    }
+  },
+  "contrast_engine": {
+    "status": "implemented_v1",
+    "purpose": "Estimate the overall visual contrast of appearance from skin, hair, eyes, eyebrows, and feature definition before season scoring.",
+    "output": {
+      "low_score": "0..100",
+      "medium_score": "0..100",
+      "high_score": "0..100",
+      "classification": "low|medium|high|uncertain",
+      "confidence": "0..1",
+      "evidence": "array[object]",
+      "conflicts": "array[string]"
+    },
+    "evidence_priority": [
+      {
+        "source": "skin_hair_contrast",
+        "weight": 0.35,
+        "reason": "Primary structural contrast of the face."
+      },
+      {
+        "source": "skin_eye_contrast",
+        "weight": 0.2,
+        "reason": "Important secondary contrast signal."
+      },
+      {
+        "source": "feature_definition",
+        "weight": 0.2,
+        "reason": "Captures whether features appear blended or sharply separated."
+      },
+      {
+        "source": "eyebrows",
+        "weight": 0.1,
+        "reason": "Supports the overall contrast estimate."
+      },
+      {
+        "source": "iris_contrast",
+        "weight": 0.1,
+        "reason": "Supports visible eye definition."
+      },
+      {
+        "source": "overall_impression",
+        "weight": 0.05,
+        "reason": "Used only as a consistency check."
+      }
+    ],
+    "global_rules": {
+      "minimum_total_evidence_weight": 0.35,
+      "minimum_confidence_for_source_use": 0.4,
+      "unknown_handling": "Ignore unknown fields and renormalize available source weights.",
+      "hair_handling": {
+        "natural": 1.0,
+        "likely_natural": 0.85,
+        "possibly_colored": 0.45,
+        "colored": 0.2,
+        "unknown": 0.35
+      },
+      "makeup_handling": {
+        "none": 1.0,
+        "light": 0.95,
+        "visible": 0.75,
+        "heavy": 0.45,
+        "unknown": 0.75
+      },
+      "never_use_as_single_decisive_evidence": [
+        "dark_hair",
+        "light_skin",
+        "strong_limbal_ring",
+        "dark_eyebrows"
+      ],
+      "conflict_handling": "If low and high contrast evidence are both strong, classify as medium unless one side exceeds the other by at least 18 points."
+    },
+    "mapping": {
+      "skin_hair_contrast": {
+        "very_low": {
+          "low": 1.0,
+          "medium": 0.1,
+          "high": 0.0
+        },
+        "low": {
+          "low": 0.85,
+          "medium": 0.3,
+          "high": 0.0
+        },
+        "medium": {
+          "low": 0.2,
+          "medium": 1.0,
+          "high": 0.2
+        },
+        "high": {
+          "low": 0.0,
+          "medium": 0.35,
+          "high": 0.85
+        },
+        "very_high": {
+          "low": 0.0,
+          "medium": 0.1,
+          "high": 1.0
+        },
+        "unknown": null
+      },
+      "skin_eye_contrast": {
+        "very_low": {
+          "low": 0.9,
+          "medium": 0.15,
+          "high": 0.0
+        },
+        "low": {
+          "low": 0.75,
+          "medium": 0.35,
+          "high": 0.0
+        },
+        "medium": {
+          "low": 0.2,
+          "medium": 1.0,
+          "high": 0.2
+        },
+        "high": {
+          "low": 0.0,
+          "medium": 0.4,
+          "high": 0.8
+        },
+        "very_high": {
+          "low": 0.0,
+          "medium": 0.15,
+          "high": 0.95
+        },
+        "unknown": null
+      },
+      "feature_definition": {
+        "soft": {
+          "low": 1.0,
+          "medium": 0.2,
+          "high": 0.0
+        },
+        "moderate": {
+          "low": 0.25,
+          "medium": 1.0,
+          "high": 0.2
+        },
+        "defined": {
+          "low": 0.0,
+          "medium": 0.45,
+          "high": 0.8
+        },
+        "striking": {
+          "low": 0.0,
+          "medium": 0.15,
+          "high": 1.0
+        },
+        "unknown": null
+      },
+      "eyebrow_depth_relative_to_hair": {
+        "lighter": {
+          "low": 0.35,
+          "medium": 0.25,
+          "high": 0.05
+        },
+        "same": {
+          "low": 0.15,
+          "medium": 0.45,
+          "high": 0.15
+        },
+        "darker": {
+          "low": 0.05,
+          "medium": 0.3,
+          "high": 0.45
+        },
+        "unknown": null
+      },
+      "iris_contrast": {
+        "low": {
+          "low": 0.6,
+          "medium": 0.25,
+          "high": 0.0
+        },
+        "medium": {
+          "low": 0.15,
+          "medium": 0.65,
+          "high": 0.15
+        },
+        "high": {
+          "low": 0.0,
+          "medium": 0.3,
+          "high": 0.6
+        },
+        "unknown": null
+      },
+      "overall_contrast": {
+        "low": {
+          "low": 1.0,
+          "medium": 0.2,
+          "high": 0.0
+        },
+        "medium": {
+          "low": 0.15,
+          "medium": 1.0,
+          "high": 0.15
+        },
+        "high": {
+          "low": 0.0,
+          "medium": 0.2,
+          "high": 1.0
+        },
+        "uncertain": null
+      }
+    },
+    "source_rules": {
+      "skin_hair_contrast": {
+        "field": "feature_extraction.contrast.skin_hair_contrast",
+        "confidence_field": "feature_extraction.contrast.confidence",
+        "hair_naturalness_field": "feature_extraction.hair.naturalness"
+      },
+      "skin_eye_contrast": {
+        "field": "feature_extraction.contrast.skin_eye_contrast",
+        "confidence_field": "feature_extraction.contrast.confidence"
+      },
+      "feature_definition": {
+        "field": "feature_extraction.contrast.feature_definition",
+        "confidence_field": "feature_extraction.contrast.confidence"
+      },
+      "eyebrows": {
+        "field": "feature_extraction.eyebrows.depth_relative_to_hair",
+        "confidence_field": "feature_extraction.eyebrows.confidence"
+      },
+      "iris_contrast": {
+        "field": "feature_extraction.eyes.iris_contrast",
+        "confidence_field": "feature_extraction.eyes.confidence"
+      },
+      "overall_impression": {
+        "field": "feature_extraction.overall_impression.dominant_contrast",
+        "confidence_field": "feature_extraction.overall_impression.confidence"
+      }
+    },
+    "classification_thresholds": {
+      "low": {
+        "minimum_low_score": 60,
+        "minimum_gap_over_high": 18,
+        "minimum_gap_over_medium": 5
+      },
+      "medium": {
+        "minimum_medium_score": 50,
+        "maximum_low_high_gap_for_balanced_case": 17
+      },
+      "high": {
+        "minimum_high_score": 60,
+        "minimum_gap_over_low": 18,
+        "minimum_gap_over_medium": 5
+      },
+      "uncertain": {
+        "when": [
+          "total_evidence_weight_below_minimum",
+          "total_confidence_below_0.40",
+          "heavy_makeup_obscures_natural_feature_edges",
+          "colored_hair_is_primary_contrast_source",
+          "strong_source_conflicts",
+          "quality_analysis_continue_analysis_false"
+        ]
+      }
+    },
+    "confidence_rules": {
+      "base": "weighted_mean_of_used_feature_confidences",
+      "quality_multipliers": {
+        "good": 1.0,
+        "acceptable": 0.8,
+        "poor": 0.0
+      },
+      "makeup_penalty": {
+        "none": 0.0,
+        "light": 0.02,
+        "visible": 0.08,
+        "heavy": 0.18,
+        "unknown": 0.05
+      },
+      "hair_colored_penalty": {
+        "natural": 0.0,
+        "likely_natural": 0.02,
+        "possibly_colored": 0.08,
+        "colored": 0.18,
+        "unknown": 0.06
+      },
+      "source_conflict_penalty": {
+        "none": 0.0,
+        "moderate": 0.1,
+        "strong": 0.25
+      }
+    },
+    "season_effects": {
+      "low": {
+        "boost": [
+          "light_spring",
+          "light_summer",
+          "soft_summer",
+          "soft_autumn"
+        ],
+        "penalize": [
+          "bright_spring",
+          "bright_winter",
+          "true_winter",
+          "deep_winter"
+        ]
+      },
+      "medium": {
+        "boost": [
+          "true_spring",
+          "true_summer",
+          "true_autumn",
+          "deep_autumn"
+        ],
+        "penalize": []
+      },
+      "high": {
+        "boost": [
+          "bright_spring",
+          "bright_winter",
+          "true_winter",
+          "deep_winter",
+          "deep_autumn"
+        ],
+        "penalize": [
+          "light_spring",
+          "light_summer",
+          "soft_summer",
+          "soft_autumn"
+        ]
+      }
+    },
+    "evidence_log_schema": {
+      "source": "skin_hair_contrast|skin_eye_contrast|feature_definition|eyebrows|iris_contrast|overall_impression",
+      "field": "string",
+      "observed_value": "string",
+      "low_contribution": "number",
+      "medium_contribution": "number",
+      "high_contribution": "number",
+      "weight_used": "number",
+      "feature_confidence": "0..1",
+      "note": "string"
+    }
+  },
+  "exclusion_rules": {
+    "status": "implemented_v1",
+    "purpose": "Apply strong contradictions and hard incompatibilities after the four base engines have produced temperature, value, chroma, and contrast classifications.",
+    "principles": {
+      "do_not_exclude_from_single_weak_feature": true,
+      "hard_exclusion_requires": [
+        "one very strong contradiction with confidence >= 0.75",
+        "or two independent strong contradictions with confidence >= 0.60"
+      ],
+      "soft_penalty_requires": [
+        "one moderate contradiction",
+        "or one strong contradiction with insufficient confidence for hard exclusion"
+      ],
+      "unknown_never_penalized": true,
+      "quality_gate_required": true
+    },
+    "penalty_scale": {
+      "minor": -4,
+      "moderate": -8,
+      "strong": -15,
+      "hard_exclusion": -30
+    },
+    "season_rules": {
+      "light_spring": {
+        "hard_exclusions": [
+          {
+            "condition": "value_engine.classification == deep",
+            "reason": "Deep overall value contradicts the defining lightness of Light Spring."
+          },
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool temperature contradicts Light Spring."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == muted",
+            "reason": "Strongly muted appearance conflicts with Light Spring clarity."
+          },
+          {
+            "condition": "contrast_engine.classification == high",
+            "reason": "High contrast conflicts with Light Spring's low-to-medium contrast."
+          }
+        ]
+      },
+      "true_spring": {
+        "hard_exclusions": [
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool appearance contradicts True Spring."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == muted",
+            "reason": "Muted appearance conflicts with True Spring clarity."
+          },
+          {
+            "condition": "value_engine.classification == deep",
+            "reason": "Deep value is atypical for True Spring."
+          }
+        ]
+      },
+      "bright_spring": {
+        "hard_exclusions": [
+          {
+            "condition": "chroma_engine.classification == muted",
+            "reason": "Muted chroma contradicts Bright Spring."
+          },
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool temperature contradicts Bright Spring."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "contrast_engine.classification == low",
+            "reason": "Low contrast conflicts with Bright Spring."
+          },
+          {
+            "condition": "value_engine.classification == deep",
+            "reason": "Deep value weakens Bright Spring."
+          }
+        ]
+      },
+      "light_summer": {
+        "hard_exclusions": [
+          {
+            "condition": "value_engine.classification == deep",
+            "reason": "Deep overall value contradicts Light Summer."
+          },
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm appearance contradicts Light Summer."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == bright",
+            "reason": "Very bright chroma conflicts with Light Summer softness."
+          },
+          {
+            "condition": "contrast_engine.classification == high",
+            "reason": "High contrast conflicts with Light Summer."
+          }
+        ]
+      },
+      "true_summer": {
+        "hard_exclusions": [
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm appearance contradicts True Summer."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == bright",
+            "reason": "Bright chroma conflicts with True Summer softness."
+          },
+          {
+            "condition": "contrast_engine.classification == high",
+            "reason": "High contrast is atypical for True Summer."
+          }
+        ]
+      },
+      "soft_summer": {
+        "hard_exclusions": [
+          {
+            "condition": "chroma_engine.classification == bright",
+            "reason": "Bright chroma contradicts Soft Summer."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm direction conflicts with Soft Summer."
+          },
+          {
+            "condition": "contrast_engine.classification == high",
+            "reason": "High contrast conflicts with Soft Summer."
+          },
+          {
+            "condition": "value_engine.classification == deep",
+            "reason": "Deep value weakens Soft Summer."
+          }
+        ]
+      },
+      "soft_autumn": {
+        "hard_exclusions": [
+          {
+            "condition": "chroma_engine.classification == bright",
+            "reason": "Bright chroma contradicts Soft Autumn."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool direction conflicts with Soft Autumn."
+          },
+          {
+            "condition": "contrast_engine.classification == high",
+            "reason": "High contrast conflicts with Soft Autumn."
+          }
+        ]
+      },
+      "true_autumn": {
+        "hard_exclusions": [
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool appearance contradicts True Autumn."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == bright",
+            "reason": "Very bright chroma is atypical for True Autumn."
+          },
+          {
+            "condition": "value_engine.classification == light",
+            "reason": "Light value weakens True Autumn."
+          }
+        ]
+      },
+      "deep_autumn": {
+        "hard_exclusions": [
+          {
+            "condition": "value_engine.classification == light",
+            "reason": "Light value contradicts Deep Autumn."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool direction conflicts with Deep Autumn."
+          },
+          {
+            "condition": "contrast_engine.classification == low",
+            "reason": "Low contrast is atypical for Deep Autumn."
+          }
+        ]
+      },
+      "bright_winter": {
+        "hard_exclusions": [
+          {
+            "condition": "chroma_engine.classification == muted",
+            "reason": "Muted chroma contradicts Bright Winter."
+          },
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm appearance contradicts Bright Winter."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "contrast_engine.classification == low",
+            "reason": "Low contrast conflicts with Bright Winter."
+          }
+        ]
+      },
+      "true_winter": {
+        "hard_exclusions": [
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm appearance contradicts True Winter."
+          },
+          {
+            "condition": "contrast_engine.classification == low",
+            "reason": "Low contrast contradicts True Winter."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == muted",
+            "reason": "Muted appearance conflicts with True Winter."
+          }
+        ]
+      },
+      "deep_winter": {
+        "hard_exclusions": [
+          {
+            "condition": "value_engine.classification == light",
+            "reason": "Light value contradicts Deep Winter."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm direction conflicts with Deep Winter."
+          },
+          {
+            "condition": "contrast_engine.classification == low",
+            "reason": "Low contrast conflicts with Deep Winter."
+          }
+        ]
+      }
+    },
+    "cross_dimension_rules": [
+      {
+        "id": "light_and_high_contrast",
+        "when": {
+          "value": "light",
+          "contrast": "high"
+        },
+        "effects": {
+          "boost": [
+            "bright_spring",
+            "bright_winter"
+          ],
+          "penalize": [
+            "light_spring",
+            "light_summer"
+          ]
+        },
+        "reason": "Light appearance with high contrast usually points away from the Light seasons."
+      },
+      {
+        "id": "deep_and_low_contrast",
+        "when": {
+          "value": "deep",
+          "contrast": "low"
+        },
+        "effects": {
+          "boost": [
+            "soft_autumn",
+            "soft_summer"
+          ],
+          "penalize": [
+            "deep_autumn",
+            "deep_winter",
+            "true_winter"
+          ]
+        },
+        "reason": "Deep coloring without strong contrast weakens Deep and Winter outcomes."
+      },
+      {
+        "id": "neutral_and_muted",
+        "when": {
+          "temperature": [
+            "neutral_warm",
+            "neutral_cool",
+            "neutral"
+          ],
+          "chroma": "muted"
+        },
+        "effects": {
+          "boost": [
+            "soft_summer",
+            "soft_autumn"
+          ],
+          "penalize": [
+            "bright_spring",
+            "bright_winter"
+          ]
+        },
+        "reason": "Neutral temperature plus muted chroma strongly supports Soft seasons."
+      },
+      {
+        "id": "clear_and_high_contrast",
+        "when": {
+          "chroma": [
+            "clear",
+            "bright"
+          ],
+          "contrast": "high"
+        },
+        "effects": {
+          "boost": [
+            "bright_spring",
+            "bright_winter",
+            "true_winter"
+          ],
+          "penalize": [
+            "soft_summer",
+            "soft_autumn"
+          ]
+        },
+        "reason": "Clear high-contrast appearance supports Bright or Winter families."
+      }
+    ],
+    "application_order": [
+      "base_dimension_scoring",
+      "season_profile_matching",
+      "cross_dimension_rules",
+      "season_specific_penalties",
+      "hard_exclusions",
+      "confusion_resolution",
+      "final_ranking"
+    ],
+    "output_schema": {
+      "season_id": "string",
+      "applied_penalties": "array[object]",
+      "hard_excluded": "boolean",
+      "hard_exclusion_reasons": "array[string]",
+      "score_before_exclusions": "number",
+      "score_after_exclusions": "number"
+    }
+  },
+  "execution_pipeline": {
+    "status": "implemented_spec_v1",
+    "purpose": "Define the exact deterministic sequence from extracted features to final season ranking.",
+    "steps": [
+      {
+        "order": 1,
+        "id": "quality_gate",
+        "action": "Evaluate quality_analysis.",
+        "stop_when": "quality_analysis.continue_analysis == false",
+        "output": "quality_status"
+      },
+      {
+        "order": 2,
+        "id": "run_temperature_engine",
+        "action": "Calculate warm, cool and neutral scores, classification and confidence.",
+        "output": "temperature_result"
+      },
+      {
+        "order": 3,
+        "id": "run_value_engine",
+        "action": "Calculate light, medium and deep scores, classification and confidence.",
+        "output": "value_result"
+      },
+      {
+        "order": 4,
+        "id": "run_chroma_engine",
+        "action": "Calculate bright, clear, balanced, soft and muted scores, classification and confidence.",
+        "output": "chroma_result"
+      },
+      {
+        "order": 5,
+        "id": "run_contrast_engine",
+        "action": "Calculate low, medium and high scores, classification and confidence.",
+        "output": "contrast_result"
+      },
+      {
+        "order": 6,
+        "id": "calculate_base_season_scores",
+        "action": "Compare four dimension classifications with all 12 season profiles.",
+        "output": "base_season_scores"
+      },
+      {
+        "order": 7,
+        "id": "apply_cross_dimension_rules",
+        "action": "Apply boosts and penalties from cross-dimension combinations.",
+        "output": "scores_after_cross_rules"
+      },
+      {
+        "order": 8,
+        "id": "apply_exclusion_rules",
+        "action": "Apply season-specific penalties and hard exclusions.",
+        "output": "scores_after_exclusions"
+      },
+      {
+        "order": 9,
+        "id": "resolve_close_candidates",
+        "action": "Run specific or generic confusion resolution for close top candidates.",
+        "output": "confusion_resolution_result"
+      },
+      {
+        "order": 10,
+        "id": "select_final_result",
+        "action": "Select best, second and third matches and calculate final confidence.",
+        "output": "final_result"
+      }
+    ]
+  },
+  "scoring_algorithm": {
+    "status": "implemented_spec_v1",
+    "dimension_weights": {
+      "temperature": 0.3,
+      "value": 0.25,
+      "chroma": 0.25,
+      "contrast": 0.2
+    },
+    "dimension_match_values": {
+      "exact_target": 1.0,
+      "accepted_value": 0.75,
+      "adjacent_value": 0.4,
+      "opposite_value": 0.0
+    },
+    "dimension_score_formula": "dimension_points = dimension_weight * match_value * dimension_confidence",
+    "base_score_formula": "base_score = 100 * sum(available_dimension_points) / sum(available_dimension_weights * dimension_confidence)",
+    "unknown_dimension_rule": "Ignore unknown or low-confidence dimensions and renormalize the remaining available dimensions.",
+    "minimum_dimension_confidence": 0.4,
+    "minimum_available_dimension_weight": 0.45,
+    "rounding": {
+      "intermediate_precision": 4,
+      "final_score_precision": 1
+    },
+    "score_bounds": {
+      "minimum": 0,
+      "maximum": 100
+    }
+  },
+  "dimension_resolution": {
+    "temperature": {
+      "primary": "temperature_engine.output.classification",
+      "confidence": "temperature_engine.output.confidence",
+      "fallback": "feature_extraction.overall_impression.dominant_temperature"
+    },
+    "value": {
+      "primary": "value_engine.output.classification",
+      "confidence": "value_engine.output.confidence",
+      "fallback": "feature_extraction.overall_impression.dominant_value"
+    },
+    "chroma": {
+      "primary": "chroma_engine.output.classification",
+      "confidence": "chroma_engine.output.confidence",
+      "fallback": "feature_extraction.overall_impression.dominant_chroma"
+    },
+    "contrast": {
+      "primary": "contrast_engine.output.classification",
+      "confidence": "contrast_engine.output.confidence",
+      "fallback": "feature_extraction.overall_impression.dominant_contrast"
+    }
+  },
+  "score_modifiers": {
+    "status": "implemented_spec_v1",
+    "cross_dimension": {
+      "minor_boost": 3,
+      "moderate_boost": 6,
+      "strong_boost": 10,
+      "minor_penalty": -4,
+      "moderate_penalty": -8,
+      "strong_penalty": -15
+    },
+    "exclusions": {
+      "hard_exclusion_score": 0,
+      "hard_exclusion_flag": true,
+      "soft_penalty_application": "add penalty to base score and clamp to 0..100"
+    },
+    "confusion_resolution": {
+      "point_to_score_conversion": 1.5,
+      "maximum_score_adjustment": 9,
+      "winner_adjustment": "min(points_margin * 1.5, 9)",
+      "loser_adjustment": "negative winner adjustment",
+      "unresolved_when_margin_below": 2
+    }
+  },
+  "confidence_engine": {
+    "status": "implemented_spec_v1",
+    "formula": {
+      "dimension_confidence_component": 0.55,
+      "score_gap_component": 0.25,
+      "quality_component": 0.2
+    },
+    "dimension_confidence": "Weighted mean of temperature, value, chroma and contrast engine confidences.",
+    "score_gap_normalization": {
+      "0_points": 0.2,
+      "3_points": 0.4,
+      "5_points": 0.55,
+      "8_points": 0.75,
+      "12_or_more_points": 1.0
+    },
+    "quality_values": {
+      "good": 1.0,
+      "acceptable": 0.75,
+      "poor": 0.0
+    },
+    "penalties": {
+      "close_result": -0.1,
+      "confusion_unresolved": -0.12,
+      "one_dimension_unknown": -0.05,
+      "two_dimensions_unknown": -0.15,
+      "heavy_makeup": -0.08,
+      "colored_hair": -0.05,
+      "white_balance_uncertain": -0.1
+    },
+    "levels": {
+      "high": {
+        "minimum": 0.8
+      },
+      "medium": {
+        "minimum": 0.6
+      },
+      "low": {
+        "minimum": 0.4
+      },
+      "insufficient": {
+        "maximum": 0.39
+      }
+    },
+    "bounds": {
+      "minimum": 0.0,
+      "maximum": 1.0
+    }
+  },
+  "strict_input_schema": {
+    "status": "implemented_v1",
+    "required_top_level": [
+      "image",
+      "quality",
+      "features"
+    ],
+    "image": {
+      "face_detected": "boolean",
+      "multiple_faces": "boolean",
+      "face_coverage": "low|medium|high",
+      "frontal_angle": "frontal|slight_turn|profile|unknown",
+      "glasses": "none|transparent|tinted|unknown",
+      "makeup": "none|light|visible|heavy|unknown",
+      "hair_colored": "yes|no|unknown",
+      "source_type": "camera|screenshot|social_media|unknown"
+    },
+    "quality": {
+      "overall_quality": "good|acceptable|poor",
+      "continue_analysis": "boolean",
+      "problems": "array[string]",
+      "limitations": "array[string]"
+    },
+    "features": {
+      "skin": "feature_extraction.skin",
+      "eyes": "feature_extraction.eyes",
+      "hair": "feature_extraction.hair",
+      "eyebrows": "feature_extraction.eyebrows",
+      "lips": "feature_extraction.lips",
+      "contrast": "feature_extraction.contrast",
+      "overall_impression": "feature_extraction.overall_impression"
+    },
+    "validation_rules": [
+      "Every feature section must include confidence.",
+      "Unknown is allowed where the photo does not support a reliable observation.",
+      "Do not replace unknown with a guess.",
+      "Hex values may be null.",
+      "Do not provide a final season in the input."
+    ]
+  },
+  "strict_output_schema": {
+    "status": "implemented_v1",
+    "quality": {
+      "overall_quality": "good|acceptable|poor",
+      "continue_analysis": "boolean",
+      "problems": "array[string]",
+      "limitations": "array[string]"
+    },
+    "dimension_results": {
+      "temperature": {
+        "classification": "warm|neutral_warm|neutral|neutral_cool|cool|uncertain",
+        "confidence": "0..1",
+        "scores": {
+          "warm": "0..100",
+          "cool": "0..100",
+          "neutral": "0..100"
+        }
+      },
+      "value": {
+        "classification": "light|medium|deep|uncertain",
+        "confidence": "0..1",
+        "scores": {
+          "light": "0..100",
+          "medium": "0..100",
+          "deep": "0..100"
+        }
+      },
+      "chroma": {
+        "classification": "bright|clear|balanced|soft|muted|uncertain",
+        "confidence": "0..1",
+        "scores": {
+          "bright": "0..100",
+          "clear": "0..100",
+          "balanced": "0..100",
+          "soft": "0..100",
+          "muted": "0..100"
+        }
+      },
+      "contrast": {
+        "classification": "low|medium|high|uncertain",
+        "confidence": "0..1",
+        "scores": {
+          "low": "0..100",
+          "medium": "0..100",
+          "high": "0..100"
+        }
+      }
+    },
+    "season_ranking": [
+      {
+        "rank": "1..12",
+        "season_id": "string",
+        "base_score": "0..100",
+        "score_after_modifiers": "0..100",
+        "hard_excluded": "boolean",
+        "applied_rules": "array[string]"
+      }
+    ],
+    "confusion_resolution": {
+      "triggered": "boolean",
+      "pair_id": "string|null",
+      "winner": "string|null",
+      "decision_margin": "number|null",
+      "unresolved": "boolean",
+      "applied_evidence": "array[object]"
+    },
+    "result": {
+      "best_match": "string|null",
+      "second_match": "string|null",
+      "third_match": "string|null",
+      "confidence": "0..1",
+      "confidence_level": "high|medium|low|insufficient",
+      "reasoning": "array[string]",
+      "excluded": "array[object]",
+      "request_better_photo": "boolean"
+    }
+  },
+  "test_contract": {
+    "status": "ready_for_fixture_creation",
+    "minimum_required_cases": {
+      "clean_cases_per_season": 3,
+      "confusion_pair_cases_per_pair": 4,
+      "poor_quality_cases": 8,
+      "colored_hair_cases": 6,
+      "makeup_cases": 6
+    },
+    "expected_total_minimum": 80,
+    "test_case_schema": {
+      "case_id": "string",
+      "expected_season": "string|null",
+      "expected_second_candidate": "string|null",
+      "input": "strict_input_schema",
+      "expected_constraints": {
+        "minimum_best_score": "number|null",
+        "maximum_wrong_family_score": "number|null",
+        "must_not_select": "array[string]"
+      }
+    }
+  },
+  "unit_testing": {
+    "status": "fixtures_created",
+    "fixture_file": "diart_color_engine_unit_fixtures_v1.json",
+    "case_count": 26,
+    "coverage": {
+      "canonical_seasons": 12,
+      "priority_confusion_pair_boundaries": 12,
+      "missing_dimension_cases": 1,
+      "insufficient_quality_cases": 1
+    },
+    "limitations": [
+      "Synthetic dimension-level tests only.",
+      "No real portrait images included.",
+      "No expert-labelled validation set included.",
+      "Weights and thresholds are not yet empirically calibrated."
+    ],
+    "pass_conditions": {
+      "canonical_cases": "Expected season must rank first.",
+      "confusion_pair_cases": "Expected side of the pair must rank first.",
+      "missing_dimension_case": "One of the allowed Light seasons must rank first without high confidence.",
+      "insufficient_case": "No season selected and better photo requested."
+    }
+  },
+  "feature_execution": {
+    "status": "implemented_spec_v1",
+    "purpose": "Calculate temperature, value, chroma and contrast directly from the strict feature JSON before running the season scoring pipeline.",
+    "implemented_modules": [
+      "temperature_engine",
+      "value_engine",
+      "chroma_engine",
+      "contrast_engine"
+    ],
+    "input": "strict_input_schema.features",
+    "output": "strict_output_schema.dimension_results",
+    "fallback_policy": "Use unknown rather than guessing when evidence is insufficient."
+  },
+  "calibration": {
+    "v2_1": {
+      "issues_fixed": [
+        "Bright profiles could be classified as clear when clear_score exceeded bright_score despite strong bright markers.",
+        "Mixed light-skin/deep-hair profiles could return uncertain value instead of medium overall value."
+      ],
+      "chroma_bright_override": {
+        "minimum_bright_score": 55,
+        "maximum_clear_lead": 18,
+        "required_marker_points": 3,
+        "markers": {
+          "overall_impression.dominant_chroma == bright": 2,
+          "contrast.feature_definition == striking": 2,
+          "eyes.clarity == sparkling": 1,
+          "eyes.brightness == high": 1,
+          "eyes.iris_contrast == high": 1,
+          "contrast.overall_contrast == high": 1
+        },
+        "result": "bright"
+      },
+      "value_mixed_extremes_rule": {
+        "when": [
+          "light_score >= 25",
+          "deep_score >= 25",
+          "abs(light_score - deep_score) <= 15",
+          "medium_score >= 30"
+        ],
+        "result": "medium",
+        "reason": "The overall appearance contains both light and deep features, producing a medium composite value."
+      }
+    }
+  }
+}
