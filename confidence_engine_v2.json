@@ -1,0 +1,60 @@
+{
+  "confidence_engine_v2": {
+    "version": "2.1",
+    "weights": {
+      "gap_score": 0.4,
+      "dimension_score": 0.25,
+      "coverage_score": 0.2,
+      "consistency_score": 0.15
+    },
+    "minimum_usable_confidence": 0.3,
+    "minimum_strong_confidence": 0.45,
+    "gap_curve": [
+      [
+        18,
+        0.95
+      ],
+      [
+        14,
+        0.85
+      ],
+      [
+        10,
+        0.75
+      ],
+      [
+        8,
+        0.62
+      ],
+      [
+        5,
+        0.45
+      ],
+      [
+        3,
+        0.3
+      ],
+      [
+        0.01,
+        0.18
+      ],
+      [
+        0,
+        0.1
+      ]
+    ],
+    "levels": {
+      "very_high": 0.86,
+      "high": 0.71,
+      "medium": 0.51,
+      "low": 0.36
+    },
+    "penalties": {
+      "specific_confusion_unresolved": 0.08,
+      "generic_close_result": 0.03,
+      "one_dimension_unknown": 0.03,
+      "multiple_dimensions_unknown": 0.1,
+      "poor_photo_quality": 0.12
+    }
+  }
+}
