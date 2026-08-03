@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.8.0
+ * DiArt Color Engine v4.9.0
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.8.0";
+const ENGINE_RUNTIME_VERSION = "4.9.0";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -42,12 +42,50 @@ async function fetchJson(filename) {
   return response.json();
 }
 
+async function fetchOptionalJson(filename) {
+  try {
+    return await fetchJson(filename);
+  } catch (error) {
+    return null;
+  }
+}
+
 async function loadConfig() {
   const manifest = await fetchJson("manifest.json");
   assert(manifest.entrypoint && manifest.modules, "invalid manifest.json");
-  const files = [...new Set([manifest.entrypoint, ...Object.values(manifest.modules)].filter(Boolean))];
+
+  const files = [...new Set([
+    manifest.entrypoint,
+    ...Object.values(manifest.modules)
+  ].filter(Boolean))];
+
   const parts = await Promise.all(files.map(fetchJson));
-  return { config: Object.assign({}, ...parts), files };
+
+  const optionalFiles = [
+    "reliability_engine_v2.json",
+    "confidence_engine_v2.json"
+  ];
+
+  const optionalParts = await Promise.all(
+    optionalFiles.map(fetchOptionalJson)
+  );
+
+  const loadedOptionalFiles = optionalFiles.filter(
+    (_, index) => optionalParts[index]
+  );
+
+  const config = Object.assign(
+    {},
+    ...parts,
+    ...optionalParts.filter(Boolean)
+  );
+
+  validateConfig(config);
+
+  return {
+    config,
+    files: [...files, ...loadedOptionalFiles]
+  };
 }
 
 function collapseDepth(v) {
@@ -89,6 +127,7 @@ function inferUndertoneFamily(ex) {
   return "beige_neutral";
 }
 function normalizeEyeColor(v) {
+  if (isUnknown(v)) return "unknown";
   const s = String(v || "").toLowerCase();
   const allowed = ["very_light_blue","blue","blue_gray","gray","green","gray_green","hazel","amber","light_brown","medium_brown","dark_brown","black_brown","mixed"];
   if (allowed.includes(s)) return s;
@@ -102,7 +141,7 @@ function normalizeEyeColor(v) {
   if (s.includes("gray")) return "gray";
   if (s.includes("hazel")) return "hazel";
   if (s.includes("amber")) return "amber";
-  return "mixed";
+  return "unknown";
 }
 function brightnessFromDepth(v) {
   if (["very_light", "light", "light_medium"].includes(v)) return "high";
@@ -157,7 +196,9 @@ function adaptExtractor(ex) {
         visible: ex.image_quality?.face_visible !== false,
         dominant_depth: skinDepth,
         temperature: skinTemp,
-        undertone_family: inferUndertoneFamily(ex),
+        undertone_family:
+          oc.skin?.undertone_family ||
+          inferUndertoneFamily(ex),
         surface_redness: oc.skin?.redness_level || "unknown",
         clarity: chromaToSkinHair(skinChroma),
         translucency: "unknown",
@@ -167,7 +208,9 @@ function adaptExtractor(ex) {
         confidence: clamp(confidenceMean([vf.skin_temperature?.confidence, vf.skin_value?.confidence, vf.skin_chroma?.confidence, oc.skin?.confidence]))
       },
       eyes: {
-        visible: Boolean(oc.eyes),
+        visible:
+          Boolean(oc.eyes?.primary_color) ||
+          Boolean(oc.eyes?.hex),
         base_color: normalizeEyeColor(oc.eyes?.primary_color),
         temperature: eyeTemp,
         clarity: normalizeClarity(eyeChroma),
@@ -180,7 +223,9 @@ function adaptExtractor(ex) {
         confidence: clamp(confidenceMean([vf.eye_temperature?.confidence, vf.eye_value?.confidence, vf.eye_chroma?.confidence, oc.eyes?.confidence]))
       },
       hair: {
-        visible: Boolean(oc.hair),
+        visible:
+          Boolean(oc.hair?.primary_color) ||
+          Boolean(oc.hair?.hex),
         naturalness: naturalness(ex),
         depth: hairDepth,
         temperature: hairTemp,
@@ -191,8 +236,34 @@ function adaptExtractor(ex) {
         observed_hex: oc.hair?.hex ?? null,
         confidence: clamp(confidenceMean([vf.hair_temperature?.confidence, vf.hair_value?.confidence, vf.hair_chroma?.confidence, oc.hair?.confidence]))
       },
-      eyebrows: { visible: false, depth_relative_to_hair: "unknown", temperature: "uncertain", clarity: "unknown", confidence: 0 },
-      lips: { visible: false, natural_color: "unknown", temperature: "uncertain", depth: "unknown", clarity: "unknown", confidence: 0 },
+      eyebrows: {
+        visible:
+          Boolean(oc.eyebrows?.primary_color) ||
+          Boolean(oc.eyebrows?.hex),
+        depth_relative_to_hair:
+          oc.eyebrows?.depth_relative_to_hair || "unknown",
+        temperature:
+          oc.eyebrows?.temperature_observation || "uncertain",
+        clarity:
+          normalizeClarity(oc.eyebrows?.clarity),
+        confidence:
+          clamp(oc.eyebrows?.confidence || 0)
+      },
+      lips: {
+        visible:
+          Boolean(oc.lips?.primary_color) ||
+          Boolean(oc.lips?.hex),
+        natural_color:
+          oc.lips?.primary_color || "unknown",
+        temperature:
+          oc.lips?.temperature_observation || "uncertain",
+        depth:
+          mapDepthForConfig(oc.lips?.depth),
+        clarity:
+          normalizeClarity(oc.lips?.clarity),
+        confidence:
+          clamp(oc.lips?.confidence || 0)
+      },
       contrast: {
         skin_hair_contrast: collapseContrast(cf.skin_hair_value_difference?.level),
         skin_eye_contrast: collapseContrast(cf.skin_eye_value_difference?.level),
@@ -223,6 +294,109 @@ function adaptExtractor(ex) {
    This preserves the exact v4.1.0 decision logic while we
    validate the reliability model on real photographs.
 ========================================================= */
+
+function validateConfig(config) {
+  assert(config.engine, "engine.json missing");
+  assert(config.temperature_engine, "temperature.json missing");
+  assert(config.value_engine, "value.json missing");
+  assert(config.chroma_engine, "chroma.json missing");
+  assert(config.contrast_engine, "contrast.json missing");
+  assert(config.season_scoring, "season_scoring.json missing");
+
+  const profiles = config.season_scoring.season_profiles || {};
+  assert(
+    Object.keys(profiles).length === 12,
+    "season_scoring must contain exactly 12 season profiles"
+  );
+
+  for (const [name, profile] of Object.entries(profiles)) {
+    for (const dimension of [
+      "temperature",
+      "value",
+      "chroma",
+      "contrast"
+    ]) {
+      assert(
+        profile?.[dimension]?.target,
+        `${name}.${dimension}.target missing`
+      );
+    }
+  }
+
+  for (const engineName of [
+    "temperature_engine",
+    "value_engine",
+    "chroma_engine",
+    "contrast_engine"
+  ]) {
+    const priority = config[engineName]?.evidence_priority;
+    assert(
+      Array.isArray(priority),
+      `${engineName}.evidence_priority missing`
+    );
+
+    const total = priority.reduce(
+      (sum, item) => sum + Number(item.weight || 0),
+      0
+    );
+
+    assert(
+      total > 0,
+      `${engineName}.evidence_priority total must be > 0`
+    );
+  }
+}
+
+function evidenceWeightWithoutConfidence(item) {
+  const confidence = Number(item?.feature_confidence || 0);
+  const used = Number(item?.weight_used || 0);
+  return confidence > 0 ? used / confidence : 0;
+}
+
+function evidenceMetrics(evidence, availableWeight, quality, scores) {
+  const presentWeight = evidence.reduce(
+    (sum, item) =>
+      sum + evidenceWeightWithoutConfidence(item),
+    0
+  );
+
+  const weightedConfidence = presentWeight > 0
+    ? evidence.reduce(
+        (sum, item) =>
+          sum +
+          evidenceWeightWithoutConfidence(item) *
+          clamp(Number(item.feature_confidence || 0)),
+        0
+      ) / presentWeight
+    : 0;
+
+  const coverage = availableWeight > 0
+    ? clamp(presentWeight / availableWeight)
+    : 0;
+
+  const ordered = Object.values(scores || {})
+    .map(Number)
+    .filter(Number.isFinite)
+    .sort((a, b) => b - a);
+
+  const separation = ordered.length >= 2
+    ? clamp(Math.max(0, ordered[0] - ordered[1]) / 20)
+    : 0;
+
+  const confidence = clamp(
+    weightedConfidence *
+    qualityMultiplier(quality) *
+    (0.75 + 0.25 * separation)
+  );
+
+  return {
+    present_weight: round(presentWeight, 4),
+    feature_confidence: round(weightedConfidence, 3),
+    coverage: round(coverage, 3),
+    score_separation: round(separation, 3),
+    confidence: round(confidence, 3)
+  };
+}
 
 function meanNumbers(values, fallback = 0) {
   const numbers = values
@@ -447,13 +621,19 @@ function calculateEvidenceReliability(extractorData, adaptedData) {
 
     const distortion = clamp(spec.distortionFactor ?? 1);
 
+    const reliabilityWeights = {
+      completeness: 0.45,
+      quality: 0.55
+    };
+
     const reliability = clamp(
       visibility *
       distortion *
       (
-        rawConfidence * 0.55 +
-        completeness * 0.25 +
-        qualityFactor * 0.20
+        completeness *
+          Number(reliabilityWeights.completeness || 0.45) +
+        qualityFactor *
+          Number(reliabilityWeights.quality || 0.55)
       )
     );
 
@@ -717,7 +897,7 @@ function calculateTemperature(config, features, quality, reliability) {
           3
         )
       },
-      hairNaturalnessMultiplier
+      1
     );
   }
 
@@ -729,8 +909,7 @@ function calculateTemperature(config, features, quality, reliability) {
     adjustedSourceWeight("skin") +
     adjustedSourceWeight("lips") +
     adjustedSourceWeight("eyes") +
-    adjustedSourceWeight("hair") *
-      hairNaturalnessMultiplier;
+    adjustedSourceWeight("hair");
 
   const minimumEvidence =
     Number(
@@ -741,8 +920,7 @@ function calculateTemperature(config, features, quality, reliability) {
     Number(sw.skin || 0) +
     Number(sw.lips || 0) +
     Number(sw.eyes || 0) +
-    Number(sw.hair || 0) *
-      hairNaturalnessMultiplier;
+    Number(sw.hair || 0);
 
   const scaledMinimumEvidence =
     originalTemperatureWeight > 0
@@ -770,16 +948,14 @@ function calculateTemperature(config, features, quality, reliability) {
     }
   }
 
-  const confidenceCoverage =
-    availableReliabilityWeight > 0
-      ? used / availableReliabilityWeight
-      : 0;
-
-  const confidence = round(
-    Math.min(1, confidenceCoverage) *
-      qualityMultiplier(quality.overall_quality),
-    3
+  const metrics = evidenceMetrics(
+    evidence,
+    availableReliabilityWeight,
+    quality.overall_quality,
+    scores
   );
+
+  const confidence = metrics.confidence;
 
   return {
     classification,
@@ -794,7 +970,11 @@ function calculateTemperature(config, features, quality, reliability) {
         4
       ),
       used_weight: round(used, 4),
-      coverage: round(confidenceCoverage, 3),
+      coverage: metrics.coverage,
+      feature_confidence: metrics.feature_confidence,
+      score_separation: metrics.score_separation,
+      dimension_reliability:
+        reliability?.dimensions?.temperature ?? 1,
       sources: {
         skin: round(reliabilityOf("skin"), 3),
         lips: round(reliabilityOf("lips"), 3),
@@ -845,7 +1025,7 @@ function calculateValue(config, features, quality, reliability) {
   used += addMapping(
     totals,
     cfg.mapping.hair_depth?.[hair.depth],
-    sw.hair * hairMultiplier * rel("hair"),
+    sw.hair * rel("hair"),
     clamp(hair.confidence),
     evidence,
     {
@@ -907,7 +1087,7 @@ function calculateValue(config, features, quality, reliability) {
   used += addMapping(
     totals,
     cfg.mapping.overall_value?.[overall.dominant_value],
-    sw.overall_impression * overallReliability,
+    sw.overall_impression * 0.25 * overallReliability,
     clamp(overall.confidence),
     evidence,
     {
@@ -940,9 +1120,9 @@ function calculateValue(config, features, quality, reliability) {
 
   const adjustedAvailableWeight =
     sw.skin * rel("skin") +
-    sw.hair * hairMultiplier * rel("hair") +
+    sw.hair * rel("hair") +
     sw.eyes * rel("eyes") +
-    sw.overall_impression * overallReliability;
+    sw.overall_impression * 0.25 * overallReliability;
 
   const originalMinimum =
     Number(cfg.global_rules.minimum_total_evidence_weight) || 0.35;
@@ -963,18 +1143,16 @@ function calculateValue(config, features, quality, reliability) {
         );
   }
 
-  const coverage =
-    adjustedAvailableWeight > 0
-      ? used / adjustedAvailableWeight
-      : 0;
+  const metrics = evidenceMetrics(
+    evidence,
+    adjustedAvailableWeight,
+    quality.overall_quality,
+    scores
+  );
 
   return {
     classification,
-    confidence: round(
-      Math.min(1, coverage) *
-      qualityMultiplier(quality.overall_quality),
-      3
-    ),
+    confidence: metrics.confidence,
     scores,
     evidence,
     conflicts: [],
@@ -982,7 +1160,11 @@ function calculateValue(config, features, quality, reliability) {
       applied: true,
       available_weight: round(adjustedAvailableWeight, 4),
       used_weight: round(used, 4),
-      coverage: round(coverage, 3),
+      coverage: metrics.coverage,
+      feature_confidence: metrics.feature_confidence,
+      score_separation: metrics.score_separation,
+      dimension_reliability:
+        reliability?.dimensions?.value ?? 1,
       sources: {
         skin: round(rel("skin"), 3),
         eyes: round(rel("eyes"), 3),
@@ -1128,7 +1310,7 @@ function calculateChroma(config, features, quality, reliability) {
           3
         )
       },
-      hairNaturalnessMultiplier
+      1
     );
   }
 
@@ -1194,11 +1376,11 @@ function calculateChroma(config, features, quality, reliability) {
     Number(sw.skin || 0) * reliabilityOf("skin") +
     Number(sw.eyes || 0) * reliabilityOf("eyes") +
     Number(sw.hair || 0) *
-      hairNaturalnessMultiplier *
       reliabilityOf("hair") +
     Number(sw.contrast || 0) *
       reliabilityOf("contrast") +
     Number(sw.overall_impression || 0) *
+      0.25 *
       overallReliability;
 
   const originalMinimum =
@@ -1227,24 +1409,14 @@ function calculateChroma(config, features, quality, reliability) {
     }
   }
 
-  const coverage =
-    adjustedAvailableWeight > 0
-      ? used / adjustedAvailableWeight
-      : 0;
-
-  const topGap =
-    ordered.length >= 2
-      ? Math.max(0, ordered[0][1] - ordered[1][1])
-      : 0;
-
-  const separationFactor = clamp(topGap / 20);
-
-  const confidence = round(
-    Math.min(1, coverage) *
-      (0.75 + 0.25 * separationFactor) *
-      qualityMultiplier(quality.overall_quality),
-    3
+  const metrics = evidenceMetrics(
+    evidence,
+    adjustedAvailableWeight,
+    quality.overall_quality,
+    scores
   );
+
+  const confidence = metrics.confidence;
 
   return {
     classification,
@@ -1259,8 +1431,11 @@ function calculateChroma(config, features, quality, reliability) {
         4
       ),
       used_weight: round(used, 4),
-      coverage: round(coverage, 3),
-      score_separation: round(separationFactor, 3),
+      coverage: metrics.coverage,
+      feature_confidence: metrics.feature_confidence,
+      score_separation: metrics.score_separation,
+      dimension_reliability:
+        reliability?.dimensions?.chroma ?? 1,
       sources: {
         skin: round(reliabilityOf("skin"), 3),
         eyes: round(reliabilityOf("eyes"), 3),
@@ -1482,7 +1657,6 @@ function calculateContrast(config, features, quality, reliability) {
 
   const adjustedAvailableWeight =
     Number(sw.skin_hair_contrast || 0) *
-      hairNaturalnessMultiplier *
       skinHairReliability +
     Number(sw.skin_eye_contrast || 0) *
       skinEyeReliability +
@@ -1491,6 +1665,7 @@ function calculateContrast(config, features, quality, reliability) {
     Number(sw.iris_contrast || 0) *
       eyeReliability +
     Number(sw.overall_impression || 0) *
+      0.25 *
       overallReliability;
 
   const originalMinimum =
@@ -1521,34 +1696,14 @@ function calculateContrast(config, features, quality, reliability) {
         : "uncertain";
   }
 
-  const coverage =
-    adjustedAvailableWeight > 0
-      ? used / adjustedAvailableWeight
-      : 0;
-
-  const topGap =
-    ordered.length >= 2
-      ? Math.max(
-          0,
-          ordered[0][1] - ordered[1][1]
-        )
-      : 0;
-
-  const separationFactor = clamp(topGap / 20);
-
-  /*
-   * Confidence keeps the old coverage × photo-quality principle.
-   * Reliability changes the available and used weights equally,
-   * so it redistributes source influence without collapsing the
-   * entire dimension confidence.
-   */
-  const confidence = round(
-    Math.min(1, coverage) *
-      qualityMultiplier(
-        quality.overall_quality
-      ),
-    3
+  const metrics = evidenceMetrics(
+    evidence,
+    adjustedAvailableWeight,
+    quality.overall_quality,
+    scores
   );
+
+  const confidence = metrics.confidence;
 
   return {
     classification,
@@ -1563,11 +1718,11 @@ function calculateContrast(config, features, quality, reliability) {
         4
       ),
       used_weight: round(used, 4),
-      coverage: round(coverage, 3),
-      score_separation: round(
-        separationFactor,
-        3
-      ),
+      coverage: metrics.coverage,
+      feature_confidence: metrics.feature_confidence,
+      score_separation: metrics.score_separation,
+      dimension_reliability:
+        reliability?.dimensions?.contrast ?? 1,
       sources: {
         skin_hair_contrast: round(
           skinHairReliability,
@@ -1697,9 +1852,8 @@ function baseScore(config, profile, dims) {
       profile
     );
 
-    const reliabilityCoverage = clamp(
+    const dimensionReliability = clamp(
       Number(
-        result.reliability?.coverage ??
         result.reliability?.dimension_reliability ??
         1
       )
@@ -1730,7 +1884,7 @@ function baseScore(config, profile, dims) {
     const effectiveWeight =
       baseWeight *
       rawConfidence *
-      reliabilityCoverage *
+      dimensionReliability *
       separationFactor *
       classificationFactor;
 
@@ -1746,8 +1900,12 @@ function baseScore(config, profile, dims) {
       classification_was_uncertain:
         classificationWasUncertain,
       confidence: round(rawConfidence, 3),
-      reliability_coverage: round(
-        reliabilityCoverage,
+      dimension_reliability: round(
+        dimensionReliability,
+        3
+      ),
+      evidence_coverage: round(
+        Number(result.reliability?.coverage ?? 0),
         3
       ),
       score_separation: round(separation, 3),
@@ -1941,106 +2099,74 @@ function resolveConfusion(config,ranking,dims,features) {
   const winner=points[rule.candidate_a]>points[rule.candidate_b]?rule.candidate_a:rule.candidate_b; return{triggered:true,pair_id:pairId,winner,decision_margin:margin,unresolved:false,applied_evidence:evidence};
 }
 function finalConfidence(config,dims,ranking,quality,confusion) {
+  const settings = config.confidence_engine_v2 || {};
+  const weights = settings.weights || {
+    gap_score: 0.40,
+    dimension_score: 0.25,
+    coverage_score: 0.20,
+    consistency_score: 0.15
+  };
+
   const dimensionEntries = Object.entries(dims).filter(
     ([, result]) => result && typeof result === "object"
   );
 
   function scoreGapComponent(points) {
     const gap = Math.max(0, Number(points || 0));
+    const curve = settings.gap_curve || [
+      [18, 0.95],
+      [14, 0.85],
+      [10, 0.75],
+      [8, 0.62],
+      [5, 0.45],
+      [3, 0.30],
+      [0.01, 0.18],
+      [0, 0.10]
+    ];
 
-    if (gap >= 18) return 0.95;
-    if (gap >= 14) return 0.85;
-    if (gap >= 10) return 0.75;
-    if (gap >= 8) return 0.62;
-    if (gap >= 5) return 0.45;
-    if (gap >= 3) return 0.30;
-    if (gap > 0) return 0.18;
+    for (const [threshold, score] of curve) {
+      if (gap >= Number(threshold)) return clamp(Number(score));
+    }
     return 0.10;
   }
 
   function usableDimension(result) {
-    const confidence = clamp(
-      Number(result?.confidence || 0)
-    );
-
     return (
       !isUnknown(result?.classification) &&
-      confidence >= 0.30
+      clamp(Number(result?.confidence || 0)) >=
+        Number(settings.minimum_usable_confidence || 0.30)
     );
   }
 
-  function effectiveDimensionConfidence(result) {
-    const confidence = clamp(
-      Number(result?.confidence || 0)
-    );
-
-    const reliabilityCoverage = clamp(
-      Number(
-        result?.reliability?.coverage ??
-        result?.reliability?.dimension_reliability ??
-        1
-      )
-    );
-
-    const classificationFactor =
-      isUnknown(result?.classification)
-        ? 0.45
-        : 1;
-
-    return clamp(
-      confidence *
-      reliabilityCoverage *
-      classificationFactor
-    );
-  }
-
-  function dimensionConsistencyScore() {
-    if (!ranking.length) return 0;
-
-    const best = ranking[0];
-    const breakdown = best?.score_breakdown || {};
-
-    const usable = Object.values(breakdown).filter(
-      item =>
-        item &&
-        item.usable &&
-        typeof item.match_value === "number"
+  function independentConsistencyScore() {
+    const usable = dimensionEntries.filter(
+      ([, result]) => usableDimension(result)
     );
 
     if (!usable.length) return 0;
 
-    const weightedMatch = usable.reduce(
-      (sum, item) =>
-        sum +
-        Number(item.effective_weight || 0) *
-        clamp(Number(item.match_value || 0)),
-      0
-    );
+    const values = usable.map(([, result]) => {
+      const scores = Object.values(result.scores || {})
+        .map(Number)
+        .filter(Number.isFinite)
+        .sort((a, b) => b - a);
 
-    const totalWeight = usable.reduce(
-      (sum, item) =>
-        sum + Number(item.effective_weight || 0),
-      0
-    );
+      const separation = scores.length >= 2
+        ? clamp(Math.max(0, scores[0] - scores[1]) / 20)
+        : 0;
 
-    if (totalWeight <= 0) return 0;
+      const conflictPenalty = Array.isArray(result.conflicts)
+        ? Math.min(0.30, result.conflicts.length * 0.10)
+        : 0;
 
-    const profileFit = clamp(
-      weightedMatch / totalWeight
-    );
+      return clamp(
+        0.55 +
+        0.45 * separation -
+        conflictPenalty
+      );
+    });
 
-    const contradictions = usable.filter(
-      item => Number(item.match_value || 0) < 0.35
-    ).length;
-
-    const contradictionPenalty = Math.min(
-      0.30,
-      contradictions * 0.10
-    );
-
-    return clamp(
-      profileFit - contradictionPenalty
-    );
+    return values.reduce((a, b) => a + b, 0) / values.length;
   }
 
   const gapPoints =
@@ -2061,154 +2187,110 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
   const dimensionScore = usableDimensions.length
     ? usableDimensions.reduce(
         (sum, [, result]) =>
-          sum +
-          clamp(Number(result.confidence || 0)),
+          sum + clamp(Number(result.confidence || 0)),
         0
       ) / usableDimensions.length
     : 0;
 
-  const coverageValues = usableDimensions.map(
-    ([, result]) =>
-      clamp(
-        Number(
-          result?.reliability?.coverage ??
-          result?.reliability?.dimension_reliability ??
-          1
-        )
-      )
-  );
-
-  const coverageScore = coverageValues.length
-    ? coverageValues.reduce((a, b) => a + b, 0) /
-      coverageValues.length
+  const coverageScore = usableDimensions.length
+    ? usableDimensions.reduce(
+        (sum, [, result]) =>
+          sum +
+          clamp(Number(result.reliability?.coverage ?? 0)),
+        0
+      ) / usableDimensions.length
     : 0;
 
-  const consistencyScore =
-    dimensionConsistencyScore();
+  const consistencyScore = independentConsistencyScore();
 
   let finalScore =
-    0.40 * gapScore +
-    0.25 * dimensionScore +
-    0.20 * coverageScore +
-    0.15 * consistencyScore;
+    Number(weights.gap_score || 0.40) * gapScore +
+    Number(weights.dimension_score || 0.25) * dimensionScore +
+    Number(weights.coverage_score || 0.20) * coverageScore +
+    Number(weights.consistency_score || 0.15) * consistencyScore;
 
   const penalties = [];
 
-  if (
-    confusion?.triggered &&
-    confusion?.unresolved &&
-    confusion?.pair_id
-  ) {
-    finalScore -= 0.08;
-    penalties.push({
-      type: "specific_confusion_unresolved",
-      value: -0.08
-    });
-  } else if (
-    confusion?.triggered &&
-    confusion?.unresolved
-  ) {
-    finalScore -= 0.03;
-    penalties.push({
-      type: "generic_close_result",
-      value: -0.03
-    });
+  if (confusion?.triggered && confusion?.unresolved && confusion?.pair_id) {
+    const penalty = Number(settings.penalties?.specific_confusion_unresolved ?? 0.08);
+    finalScore -= penalty;
+    penalties.push({ type: "specific_confusion_unresolved", value: -penalty });
+  } else if (confusion?.triggered && confusion?.unresolved) {
+    const penalty = Number(settings.penalties?.generic_close_result ?? 0.03);
+    finalScore -= penalty;
+    penalties.push({ type: "generic_close_result", value: -penalty });
   }
 
   const unknownCount = dimensionEntries.filter(
-    ([, result]) =>
-      isUnknown(result?.classification)
+    ([, result]) => isUnknown(result?.classification)
   ).length;
 
   if (unknownCount === 1) {
-    finalScore -= 0.03;
-    penalties.push({
-      type: "one_dimension_unknown",
-      value: -0.03
-    });
+    const penalty = Number(settings.penalties?.one_dimension_unknown ?? 0.03);
+    finalScore -= penalty;
+    penalties.push({ type: "one_dimension_unknown", value: -penalty });
   } else if (unknownCount >= 2) {
-    finalScore -= 0.10;
-    penalties.push({
-      type: "multiple_dimensions_unknown",
-      value: -0.10
-    });
+    const penalty = Number(settings.penalties?.multiple_dimensions_unknown ?? 0.10);
+    finalScore -= penalty;
+    penalties.push({ type: "multiple_dimensions_unknown", value: -penalty });
   }
 
   if (quality === "poor") {
-    finalScore -= 0.12;
-    penalties.push({
-      type: "poor_photo_quality",
-      value: -0.12
-    });
+    const penalty = Number(settings.penalties?.poor_photo_quality ?? 0.12);
+    finalScore -= penalty;
+    penalties.push({ type: "poor_photo_quality", value: -penalty });
   }
 
   finalScore = clamp(finalScore);
 
+  const levels = settings.levels || {
+    very_high: 0.86,
+    high: 0.71,
+    medium: 0.51,
+    low: 0.36
+  };
+
   const level =
-    finalScore >= 0.86 ? "very_high" :
-    finalScore >= 0.71 ? "high" :
-    finalScore >= 0.51 ? "medium" :
-    finalScore >= 0.36 ? "low" :
+    finalScore >= Number(levels.very_high) ? "very_high" :
+    finalScore >= Number(levels.high) ? "high" :
+    finalScore >= Number(levels.medium) ? "medium" :
+    finalScore >= Number(levels.low) ? "low" :
     "very_low";
 
   const dimensions = dimensionEntries.map(
     ([name, result]) => ({
       dimension: name,
       classification: result.classification,
-      confidence: round(
-        Number(result.confidence || 0),
+      confidence: round(Number(result.confidence || 0), 3),
+      evidence_coverage: round(
+        Number(result.reliability?.coverage ?? 0),
         3
       ),
-      reliability_coverage: round(
-        Number(
-          result?.reliability?.coverage ??
-          result?.reliability?.dimension_reliability ??
-          1
-        ),
-        3
-      ),
-      effective_confidence: round(
-        effectiveDimensionConfidence(result),
+      dimension_reliability: round(
+        Number(result.reliability?.dimension_reliability ?? 1),
         3
       ),
       usable: usableDimension(result),
       strong:
         !isUnknown(result?.classification) &&
-        Number(result.confidence || 0) >= 0.45
+        Number(result.confidence || 0) >=
+          Number(settings.minimum_strong_confidence || 0.45)
     })
   );
 
   return {
-    version: "2.0",
+    version: "2.1",
     score: round(finalScore, 3),
     level,
-    usable_dimensions: dimensions.filter(
-      item => item.usable
-    ).length,
-    strong_dimensions: dimensions.filter(
-      item => item.strong
-    ).length,
+    usable_dimensions: dimensions.filter(x => x.usable).length,
+    strong_dimensions: dimensions.filter(x => x.strong).length,
     components: {
       gap_score: round(gapScore, 3),
-      dimension_score: round(
-        dimensionScore,
-        3
-      ),
-      coverage_score: round(
-        coverageScore,
-        3
-      ),
-      consistency_score: round(
-        consistencyScore,
-        3
-      )
+      dimension_score: round(dimensionScore, 3),
+      coverage_score: round(coverageScore, 3),
+      consistency_score: round(consistencyScore, 3)
     },
-    weights: {
-      gap_score: 0.40,
-      dimension_score: 0.25,
-      coverage_score: 0.20,
-      consistency_score: 0.15
-    },
+    weights,
     score_gap_points: round(gapPoints, 1),
     dimensions,
     penalties
@@ -2268,7 +2350,7 @@ function runScoring(config,dims,quality,features) {
 
   const provisional=
     !noResult && (
-      conf.level==="insufficient" ||
+      ["very_low","low"].includes(conf.level) ||
       confusion.unresolved ||
       usableDimensions<3
     );
@@ -2276,7 +2358,7 @@ function runScoring(config,dims,quality,features) {
   const requestBetterPhoto=
     quality==="poor" ||
     usableDimensions<2 ||
-    (!noResult && conf.level==="insufficient" && best.score_after_modifiers<50);
+    conf.level==="very_low";
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
@@ -2376,28 +2458,57 @@ const dims={
     evidenceReliability
   )
 };
-const decision=runScoring(config,dims,adapted.quality.overall_quality,adapted.features);
+const decision=runScoring(
+  config,
+  dims,
+  adapted.quality.overall_quality,
+  adapted.features
+);
+
+const localScoringDiagnostics = {
+  resolved_dimensions: Object.fromEntries(
+    Object.entries(dims).map(([name, result]) => [
+      name,
+      {
+        original_classification: result.classification,
+        scoring_classification:
+          resolveDimensionClassification(result),
+        confidence: result.confidence,
+        evidence_coverage:
+          result.reliability?.coverage ?? 0,
+        dimension_reliability:
+          result.reliability?.dimension_reliability ?? 1
+      }
+    ])
+  ),
+  dimension_weights: getDimensionWeights(config),
+  minimum_dimension_confidence:
+    config.scoring_algorithm?.minimum_dimension_confidence ??
+    0.4
+};
+
 return {
   ok: true,
   stage: "completed",
   runtime_version: ENGINE_RUNTIME_VERSION,
-  engine: { name: config.engine.name, version: config.engine.version, status: config.engine.status },
-  extractor: { version: extractor.extractor_version, status: extractor.analysis_status, global_reliability: extractor.global_reliability },
+  engine: {
+    name: config.engine.name,
+    version: config.engine.version,
+    status: config.engine.status
+  },
+  extractor: {
+    version: extractor.extractor_version,
+    status: extractor.analysis_status,
+    global_reliability: extractor.global_reliability
+  },
   quality: adapted.quality,
   observed_colors: extractor.observed_colors,
   evidence_reliability: evidenceReliability,
   dimension_results: dims,
-  scoring_diagnostics: {
-    resolved_dimensions: Object.fromEntries(
-      Object.entries(dims).map(([name, result]) => [name, {
-        original_classification: result.classification,
-        scoring_classification: resolveDimensionClassification(result),
-        confidence: result.confidence
-      }])
-    ),
-    dimension_weights: getDimensionWeights(config),
-    minimum_dimension_confidence: config.scoring_algorithm?.minimum_dimension_confidence ?? 0.4
-  },
   ...decision,
+  scoring_diagnostics: {
+    ...localScoringDiagnostics,
+    ...(decision.scoring_diagnostics || {})
+  },
   loaded_files: files
 };
