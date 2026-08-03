@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.3.0
+ * DiArt Color Engine v4.4.0
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.3.0";
+const ENGINE_RUNTIME_VERSION = "4.4.0";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -510,10 +510,10 @@ function calculateEvidenceReliability(extractorData, adaptedData) {
   );
 
   return {
-    mode: "temperature_only",
+    mode: "temperature_and_value",
     applied_to_calculations: {
       temperature: true,
-      value: false,
+      value: true,
       chroma: false,
       contrast: false,
       season_scoring: false
@@ -805,16 +805,274 @@ function calculateTemperature(config, features, quality, reliability) {
   };
 }
 
-function calculateValue(config, features, quality) {
-  const cfg=config.value_engine, totals={light:0,medium:0,deep:0}, evidence=[]; const sw=Object.fromEntries(cfg.evidence_priority.map(x=>[x.source,Number(x.weight)])); let used=0;
-  const skin=features.skin||{}; used+=addMapping(totals,cfg.mapping.skin_depth?.[skin.dominant_depth],sw.skin,clamp(skin.confidence),evidence,{source:"skin",field:"dominant_depth",observed_value:skin.dominant_depth});
-  const hair=features.hair||{}, hm=cfg.global_rules.hair_handling?.[hair.naturalness]??.35; used+=addMapping(totals,cfg.mapping.hair_depth?.[hair.depth],sw.hair*hm,clamp(hair.confidence),evidence,{source:"hair",field:"depth",observed_value:hair.depth});
-  const eyes=features.eyes||{}, ec=clamp(eyes.confidence); used+=addMapping(totals,cfg.mapping.eye_base_color?.[eyes.base_color],sw.eyes*.85,ec,evidence,{source:"eyes",field:"base_color",observed_value:eyes.base_color}); used+=addMapping(totals,cfg.mapping.eye_brightness_modifier?.[eyes.brightness],sw.eyes*.15,ec,evidence,{source:"eyes",field:"brightness",observed_value:eyes.brightness});
-  const overall=features.overall_impression||{}; used+=addMapping(totals,cfg.mapping.overall_value?.[overall.dominant_value],sw.overall_impression,clamp(overall.confidence),evidence,{source:"overall_impression",field:"dominant_value",observed_value:overall.dominant_value});
-  const scores=normalizedScores(totals,used), ordered=Object.entries(scores).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])); let classification="uncertain";
-  const mixed=scores.light>=25&&scores.deep>=25&&Math.abs(scores.light-scores.deep)<=15&&scores.medium>=30;
-  if(used>=cfg.global_rules.minimum_total_evidence_weight) classification=mixed?"medium":((ordered[0][1]-ordered[1][1]>=5)?ordered[0][0]:"uncertain");
-  return {classification,confidence:round(Math.min(1,used/Object.values(sw).reduce((a,b)=>a+b,0))*qualityMultiplier(quality.overall_quality),3),scores,evidence,conflicts:[]};
+function calculateValue(config, features, quality, reliability) {
+  const cfg = config.value_engine;
+  const totals = { light: 0, medium: 0, deep: 0 };
+  const evidence = [];
+
+  const sw = Object.fromEntries(
+    cfg.evidence_priority.map(item => [
+      item.source,
+      Number(item.weight)
+    ])
+  );
+
+  const sourceReliability = reliability?.sources || {};
+
+  function reliabilityOf(sourceName) {
+    const value = Number(
+      sourceReliability[sourceName]?.reliability
+    );
+
+    return Number.isFinite(value)
+      ? clamp(value)
+      : 1;
+  }
+
+  function adjustedSourceWeight(sourceName) {
+    return Number(sw[sourceName] || 0) *
+      reliabilityOf(sourceName);
+  }
+
+  function addValueEvidence(
+    sourceName,
+    mapping,
+    subWeight,
+    featureConfidence,
+    meta,
+    extraMultiplier = 1
+  ) {
+    const baseSourceWeight = Number(sw[sourceName] || 0);
+    const sourceReliabilityValue = reliabilityOf(sourceName);
+
+    return addMapping(
+      totals,
+      mapping,
+      baseSourceWeight *
+        sourceReliabilityValue *
+        subWeight *
+        extraMultiplier,
+      featureConfidence,
+      evidence,
+      {
+        ...meta,
+        base_source_weight: round(baseSourceWeight, 4),
+        source_reliability: round(
+          sourceReliabilityValue,
+          3
+        ),
+        reliability_applied: true
+      }
+    );
+  }
+
+  let used = 0;
+
+  const skin = features.skin || {};
+  const skinConfidence = clamp(skin.confidence);
+
+  for (const [field, section, subWeight] of [
+    ["dominant_depth", "skin_depth", 0.70],
+    ["surface_tone", "surface_tone", 0.15],
+    ["clarity", "clarity", 0.15]
+  ]) {
+    used += addValueEvidence(
+      "skin",
+      cfg.mapping?.[section]?.[skin[field]],
+      subWeight,
+      skinConfidence,
+      {
+        source: "skin",
+        field,
+        observed_value: skin[field]
+      }
+    );
+  }
+
+  const eyes = features.eyes || {};
+  const eyesConfidence = clamp(eyes.confidence);
+
+  for (const [field, section, subWeight] of [
+    ["depth", "eye_depth", 0.70],
+    ["brightness", "eye_brightness", 0.20],
+    ["iris_contrast", "iris_contrast", 0.10]
+  ]) {
+    used += addValueEvidence(
+      "eyes",
+      cfg.mapping?.[section]?.[eyes[field]],
+      subWeight,
+      eyesConfidence,
+      {
+        source: "eyes",
+        field,
+        observed_value: eyes[field]
+      }
+    );
+  }
+
+  const hair = features.hair || {};
+  const hairConfidence = clamp(hair.confidence);
+
+  const hairNaturalnessMultiplier = ({
+    natural: 1,
+    likely_natural: 0.85,
+    possibly_colored: 0.45,
+    likely_colored: 0.15,
+    colored: 0,
+    unclear: 0.35,
+    unknown: 0.35
+  })[hair.naturalness] ?? 0.35;
+
+  for (const [field, section, subWeight] of [
+    ["depth", "hair_depth", 0.80],
+    ["clarity", "hair_clarity", 0.10],
+    ["shine", "hair_shine", 0.10]
+  ]) {
+    used += addValueEvidence(
+      "hair",
+      cfg.mapping?.[section]?.[hair[field]],
+      subWeight,
+      hairConfidence,
+      {
+        source: "hair",
+        field,
+        observed_value: hair[field],
+        naturalness_multiplier: round(
+          hairNaturalnessMultiplier,
+          3
+        )
+      },
+      hairNaturalnessMultiplier
+    );
+  }
+
+  const contrast = features.contrast || {};
+  const contrastConfidence = clamp(contrast.confidence);
+
+  for (const [field, section, subWeight] of [
+    ["skin_hair_contrast", "skin_hair_contrast", 0.45],
+    ["skin_eye_contrast", "skin_eye_contrast", 0.35],
+    ["overall_contrast", "overall_contrast", 0.20]
+  ]) {
+    used += addValueEvidence(
+      "contrast",
+      cfg.mapping?.[section]?.[contrast[field]],
+      subWeight,
+      contrastConfidence,
+      {
+        source: "contrast",
+        field,
+        observed_value: contrast[field]
+      }
+    );
+  }
+
+  const scores = normalizedScores(totals, used);
+  const ranking = Object.entries(scores)
+    .sort((a, b) => b[1] - a[1]);
+
+  let classification = "uncertain";
+
+  const availableReliabilityWeight =
+    adjustedSourceWeight("skin") +
+    adjustedSourceWeight("eyes") +
+    adjustedSourceWeight("hair") *
+      hairNaturalnessMultiplier +
+    adjustedSourceWeight("contrast");
+
+  const minimumEvidence =
+    Number(
+      cfg.global_rules?.minimum_total_evidence_weight
+    ) || 0.35;
+
+  const originalValueWeight =
+    Number(sw.skin || 0) +
+    Number(sw.eyes || 0) +
+    Number(sw.hair || 0) *
+      hairNaturalnessMultiplier +
+    Number(sw.contrast || 0);
+
+  const scaledMinimumEvidence =
+    originalValueWeight > 0
+      ? minimumEvidence *
+        (
+          availableReliabilityWeight /
+          originalValueWeight
+        )
+      : minimumEvidence;
+
+  if (used >= scaledMinimumEvidence && ranking.length >= 2) {
+    const [firstName, firstScore] = ranking[0];
+    const secondScore = ranking[1][1];
+    const gap = firstScore - secondScore;
+
+    if (
+      firstName === "light" &&
+      firstScore >= 52 &&
+      gap >= 8
+    ) {
+      classification = "light";
+    } else if (
+      firstName === "deep" &&
+      firstScore >= 52 &&
+      gap >= 8
+    ) {
+      classification = "deep";
+    } else if (
+      firstName === "medium" &&
+      firstScore >= 48 &&
+      gap >= 5
+    ) {
+      classification = "medium";
+    } else if (gap >= 5) {
+      classification = firstName;
+    } else {
+      classification = "uncertain";
+    }
+  }
+
+  const confidenceCoverage =
+    availableReliabilityWeight > 0
+      ? used / availableReliabilityWeight
+      : 0;
+
+  const topGap =
+    ranking.length >= 2
+      ? Math.max(0, ranking[0][1] - ranking[1][1])
+      : 0;
+
+  const separationFactor = clamp(topGap / 20);
+
+  const confidence = round(
+    Math.min(1, confidenceCoverage) *
+      (0.75 + 0.25 * separationFactor) *
+      qualityMultiplier(quality.overall_quality),
+    3
+  );
+
+  return {
+    classification,
+    confidence,
+    scores,
+    evidence,
+    conflicts: [],
+    reliability: {
+      applied: true,
+      available_weight: round(
+        availableReliabilityWeight,
+        4
+      ),
+      used_weight: round(used, 4),
+      coverage: round(confidenceCoverage, 3),
+      score_separation: round(separationFactor, 3),
+      sources: {
+        skin: round(reliabilityOf("skin"), 3),
+        eyes: round(reliabilityOf("eyes"), 3),
+        hair: round(reliabilityOf("hair"), 3),
+        contrast: round(reliabilityOf("contrast"), 3)
+      }
+    }
+  };
 }
 
 function calculateChroma(config, features, quality) {
@@ -1312,7 +1570,8 @@ const dims={
   value:calculateValue(
     config,
     adapted.features,
-    adapted.quality
+    adapted.quality,
+    evidenceReliability
   ),
   chroma:calculateChroma(
     config,
