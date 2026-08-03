@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.7.0
+ * DiArt Color Engine v4.8.0
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.7.0";
+const ENGINE_RUNTIME_VERSION = "4.8.0";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1941,146 +1941,276 @@ function resolveConfusion(config,ranking,dims,features) {
   const winner=points[rule.candidate_a]>points[rule.candidate_b]?rule.candidate_a:rule.candidate_b; return{triggered:true,pair_id:pairId,winner,decision_margin:margin,unresolved:false,applied_evidence:evidence};
 }
 function finalConfidence(config,dims,ranking,quality,confusion) {
-  const cfg=config.confidence_engine||{};
-  const formula=cfg.formula||{
-    dimension_confidence_component:.50,
-    score_gap_component:.20,
-    quality_component:.15
-  };
+  const dimensionEntries = Object.entries(dims).filter(
+    ([, result]) => result && typeof result === "object"
+  );
 
-  const dimensionEntries=Object.entries(dims).filter(([,x])=>x&&typeof x==="object");
+  function scoreGapComponent(points) {
+    const gap = Math.max(0, Number(points || 0));
 
-  function scoreSeparation(result){
-    const values=Object.values(result?.scores||{})
-      .map(Number)
-      .filter(Number.isFinite)
-      .sort((a,b)=>b-a);
-
-    if(values.length<2)return 0;
-    const gap=Math.max(0,values[0]-values[1]);
-    return clamp(gap/20);
+    if (gap >= 18) return 0.95;
+    if (gap >= 14) return 0.85;
+    if (gap >= 10) return 0.75;
+    if (gap >= 8) return 0.62;
+    if (gap >= 5) return 0.45;
+    if (gap >= 3) return 0.30;
+    if (gap > 0) return 0.18;
+    return 0.10;
   }
 
-  const dimensionDiagnostics=dimensionEntries.map(([name,result])=>{
-    const rawConfidence=clamp(result.confidence||0);
-    const classified=!isUnknown(result.classification);
-    const separation=scoreSeparation(result);
+  function usableDimension(result) {
+    const confidence = clamp(
+      Number(result?.confidence || 0)
+    );
 
-    // A dimension may still provide supporting evidence even when its final
-    // classification is uncertain. We reduce it instead of discarding it.
-    const classificationFactor=classified?1:.55;
-    const separationFactor=.70+.30*separation;
-    const effectiveConfidence=rawConfidence*classificationFactor*separationFactor;
-
-    return{
-      dimension:name,
-      classification:result.classification,
-      raw_confidence:round(rawConfidence,3),
-      score_separation:round(separation,3),
-      effective_confidence:round(effectiveConfidence,3),
-      usable:classified&&rawConfidence>=.30,
-      strong:classified&&rawConfidence>=.45
-    };
-  });
-
-  const dimensionComponent=dimensionDiagnostics.length
-    ? dimensionDiagnostics.reduce((sum,x)=>sum+x.effective_confidence,0)/dimensionDiagnostics.length
-    : 0;
-
-  const gap=ranking.length>1
-    ? Math.max(0,ranking[0].score_after_modifiers-ranking[1].score_after_modifiers)
-    : 0;
-
-  const gapRules=cfg.score_gap_normalization||{};
-  const gapComponent=
-    gap>=12 ? Number(gapRules["12_or_more_points"]??1) :
-    gap>=8  ? Number(gapRules["8_points"]??.75) :
-    gap>=5  ? Number(gapRules["5_points"]??.55) :
-    gap>=3  ? Number(gapRules["3_points"]??.40) :
-              Number(gapRules["0_points"]??.20);
-
-  const qualityComponent=(cfg.quality_values||{
-    good:1,
-    acceptable:.75,
-    poor:0,
-    unusable:0
-  })[quality]??0;
-
-  const usableCount=dimensionDiagnostics.filter(x=>x.usable).length;
-  const strongCount=dimensionDiagnostics.filter(x=>x.strong).length;
-  const completenessComponent=dimensionDiagnostics.length
-    ? usableCount/dimensionDiagnostics.length
-    : 0;
-
-  const weights={
-    dimension:Number(formula.dimension_confidence_component??.50),
-    gap:Number(formula.score_gap_component??.20),
-    quality:Number(formula.quality_component??.15),
-    completeness:.15
-  };
-  const weightSum=Object.values(weights).reduce((a,b)=>a+b,0)||1;
-
-  let score=(
-    weights.dimension*dimensionComponent+
-    weights.gap*gapComponent+
-    weights.quality*qualityComponent+
-    weights.completeness*completenessComponent
-  )/weightSum;
-
-  const penalties=[];
-  const penaltyCfg=cfg.penalties||{};
-
-  // A specific unresolved pair is more serious than a generic close result.
-  if(confusion.triggered&&confusion.unresolved&&confusion.pair_id){
-    const p=Math.abs(Number(penaltyCfg.confusion_unresolved??-.08));
-    score-=p;
-    penalties.push({type:"specific_confusion_unresolved",value:-p});
-  }else if(confusion.triggered&&confusion.unresolved){
-    const p=.03;
-    score-=p;
-    penalties.push({type:"generic_close_result",value:-p});
+    return (
+      !isUnknown(result?.classification) &&
+      confidence >= 0.30
+    );
   }
 
-  const unknownCount=dimensionDiagnostics.filter(
-    x=>isUnknown(x.classification)
+  function effectiveDimensionConfidence(result) {
+    const confidence = clamp(
+      Number(result?.confidence || 0)
+    );
+
+    const reliabilityCoverage = clamp(
+      Number(
+        result?.reliability?.coverage ??
+        result?.reliability?.dimension_reliability ??
+        1
+      )
+    );
+
+    const classificationFactor =
+      isUnknown(result?.classification)
+        ? 0.45
+        : 1;
+
+    return clamp(
+      confidence *
+      reliabilityCoverage *
+      classificationFactor
+    );
+  }
+
+  function dimensionConsistencyScore() {
+    if (!ranking.length) return 0;
+
+    const best = ranking[0];
+    const breakdown = best?.score_breakdown || {};
+
+    const usable = Object.values(breakdown).filter(
+      item =>
+        item &&
+        item.usable &&
+        typeof item.match_value === "number"
+    );
+
+    if (!usable.length) return 0;
+
+    const weightedMatch = usable.reduce(
+      (sum, item) =>
+        sum +
+        Number(item.effective_weight || 0) *
+        clamp(Number(item.match_value || 0)),
+      0
+    );
+
+    const totalWeight = usable.reduce(
+      (sum, item) =>
+        sum + Number(item.effective_weight || 0),
+      0
+    );
+
+    if (totalWeight <= 0) return 0;
+
+    const profileFit = clamp(
+      weightedMatch / totalWeight
+    );
+
+    const contradictions = usable.filter(
+      item => Number(item.match_value || 0) < 0.35
+    ).length;
+
+    const contradictionPenalty = Math.min(
+      0.30,
+      contradictions * 0.10
+    );
+
+    return clamp(
+      profileFit - contradictionPenalty
+    );
+  }
+
+  const gapPoints =
+    ranking.length > 1
+      ? Math.max(
+          0,
+          Number(ranking[0].score_after_modifiers || 0) -
+          Number(ranking[1].score_after_modifiers || 0)
+        )
+      : 0;
+
+  const gapScore = scoreGapComponent(gapPoints);
+
+  const usableDimensions = dimensionEntries.filter(
+    ([, result]) => usableDimension(result)
+  );
+
+  const dimensionScore = usableDimensions.length
+    ? usableDimensions.reduce(
+        (sum, [, result]) =>
+          sum +
+          clamp(Number(result.confidence || 0)),
+        0
+      ) / usableDimensions.length
+    : 0;
+
+  const coverageValues = usableDimensions.map(
+    ([, result]) =>
+      clamp(
+        Number(
+          result?.reliability?.coverage ??
+          result?.reliability?.dimension_reliability ??
+          1
+        )
+      )
+  );
+
+  const coverageScore = coverageValues.length
+    ? coverageValues.reduce((a, b) => a + b, 0) /
+      coverageValues.length
+    : 0;
+
+  const consistencyScore =
+    dimensionConsistencyScore();
+
+  let finalScore =
+    0.40 * gapScore +
+    0.25 * dimensionScore +
+    0.20 * coverageScore +
+    0.15 * consistencyScore;
+
+  const penalties = [];
+
+  if (
+    confusion?.triggered &&
+    confusion?.unresolved &&
+    confusion?.pair_id
+  ) {
+    finalScore -= 0.08;
+    penalties.push({
+      type: "specific_confusion_unresolved",
+      value: -0.08
+    });
+  } else if (
+    confusion?.triggered &&
+    confusion?.unresolved
+  ) {
+    finalScore -= 0.03;
+    penalties.push({
+      type: "generic_close_result",
+      value: -0.03
+    });
+  }
+
+  const unknownCount = dimensionEntries.filter(
+    ([, result]) =>
+      isUnknown(result?.classification)
   ).length;
 
-  if(unknownCount===1){
-    const p=Math.abs(Number(penaltyCfg.one_dimension_unknown??-.03));
-    score-=p;
-    penalties.push({type:"one_dimension_unknown",value:-p});
-  }else if(unknownCount>=2){
-    const p=Math.abs(Number(penaltyCfg.two_dimensions_unknown??-.10));
-    score-=p;
-    penalties.push({type:"multiple_dimensions_unknown",value:-p});
+  if (unknownCount === 1) {
+    finalScore -= 0.03;
+    penalties.push({
+      type: "one_dimension_unknown",
+      value: -0.03
+    });
+  } else if (unknownCount >= 2) {
+    finalScore -= 0.10;
+    penalties.push({
+      type: "multiple_dimensions_unknown",
+      value: -0.10
+    });
   }
 
-  score=clamp(score);
+  if (quality === "poor") {
+    finalScore -= 0.12;
+    penalties.push({
+      type: "poor_photo_quality",
+      value: -0.12
+    });
+  }
 
-  const levels=cfg.levels||{};
-  const highMin=Number(levels.high?.minimum??.80);
-  const mediumMin=Number(levels.medium?.minimum??.60);
-  const lowMin=Number(levels.low?.minimum??.40);
+  finalScore = clamp(finalScore);
 
-  const level=
-    score>=highMin?"high":
-    score>=mediumMin?"medium":
-    score>=lowMin?"low":
-    "insufficient";
+  const level =
+    finalScore >= 0.86 ? "very_high" :
+    finalScore >= 0.71 ? "high" :
+    finalScore >= 0.51 ? "medium" :
+    finalScore >= 0.36 ? "low" :
+    "very_low";
 
-  return{
-    score:round(score,3),
+  const dimensions = dimensionEntries.map(
+    ([name, result]) => ({
+      dimension: name,
+      classification: result.classification,
+      confidence: round(
+        Number(result.confidence || 0),
+        3
+      ),
+      reliability_coverage: round(
+        Number(
+          result?.reliability?.coverage ??
+          result?.reliability?.dimension_reliability ??
+          1
+        ),
+        3
+      ),
+      effective_confidence: round(
+        effectiveDimensionConfidence(result),
+        3
+      ),
+      usable: usableDimension(result),
+      strong:
+        !isUnknown(result?.classification) &&
+        Number(result.confidence || 0) >= 0.45
+    })
+  );
+
+  return {
+    version: "2.0",
+    score: round(finalScore, 3),
     level,
-    usable_dimensions:usableCount,
-    strong_dimensions:strongCount,
-    components:{
-      dimension_confidence:round(dimensionComponent,3),
-      score_gap:round(gapComponent,3),
-      quality:round(qualityComponent,3),
-      completeness:round(completenessComponent,3)
+    usable_dimensions: dimensions.filter(
+      item => item.usable
+    ).length,
+    strong_dimensions: dimensions.filter(
+      item => item.strong
+    ).length,
+    components: {
+      gap_score: round(gapScore, 3),
+      dimension_score: round(
+        dimensionScore,
+        3
+      ),
+      coverage_score: round(
+        coverageScore,
+        3
+      ),
+      consistency_score: round(
+        consistencyScore,
+        3
+      )
     },
-    score_gap_points:round(gap,1),
-    dimensions:dimensionDiagnostics,
+    weights: {
+      gap_score: 0.40,
+      dimension_score: 0.25,
+      coverage_score: 0.20,
+      consistency_score: 0.15
+    },
+    score_gap_points: round(gapPoints, 1),
+    dimensions,
     penalties
   };
 }
@@ -2187,11 +2317,22 @@ function runScoring(config,dims,quality,features) {
       confidence:conf.score,
       confidence_percent:Math.round(conf.score*100),
       confidence_level:conf.level,
+      confidence_engine:{
+        version:conf.version,
+        gap_score:conf.components.gap_score,
+        dimension_score:conf.components.dimension_score,
+        coverage_score:conf.components.coverage_score,
+        consistency_score:conf.components.consistency_score,
+        weights:conf.weights,
+        final_confidence:conf.score
+      },
       decision_status:noResult?"insufficient":provisional?"provisional":"final",
       usable_dimensions:usableDimensions,
       strong_dimensions:strongDimensions,
       confidence_diagnostics:{
+        version:conf.version,
         components:conf.components,
+        weights:conf.weights,
         score_gap_points:conf.score_gap_points,
         dimensions:conf.dimensions,
         penalties:conf.penalties
