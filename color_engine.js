@@ -1,10 +1,10 @@
 /**
- * DiArt Color Engine v4.0.0-rc.1
+ * DiArt Color Engine v4.0.0-rc.2
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.0.0-rc.1";
+const ENGINE_RUNTIME_VERSION = "4.0.0-rc.2";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -261,14 +261,96 @@ function calculateContrast(config, features, quality) {
   return {classification,confidence:round(Math.min(1,used/Object.values(sw).reduce((a,b)=>a+b,0))*qualityMultiplier(quality.overall_quality),3),scores,evidence,conflicts:[]};
 }
 
-function matchValue(config, dimension, observed, profile) {
-  if(isUnknown(observed)) return null; const target=profile[dimension].target, accepted=profile[dimension].accepted, mp=config.season_scoring.match_points, adj=config.season_scoring.adjacency?.[dimension]||{};
-  if(observed===target) return Number(mp.exact_target); if(accepted.includes(observed)) return Number(mp.accepted_value); if((adj[target]||[]).includes(observed)) return Number(mp.adjacent_value); return Number(mp.opposite_value);
+function getDimensionWeights(config) {
+  const fromAlgorithm = config.scoring_algorithm?.dimension_weights;
+  if (fromAlgorithm && typeof fromAlgorithm === "object") return fromAlgorithm;
+  const dims = config.season_scoring?.dimensions || {};
+  return Object.fromEntries(
+    Object.entries(dims).map(([name, value]) => [name, Number(value?.weight || 0)])
+  );
 }
+
+function resolveDimensionClassification(result) {
+  if (!result || typeof result !== "object") return "uncertain";
+  if (!isUnknown(result.classification)) return result.classification;
+
+  const scores = result.scores;
+  if (!scores || typeof scores !== "object") return "uncertain";
+
+  const ordered = Object.entries(scores)
+    .filter(([, score]) => Number.isFinite(Number(score)))
+    .sort((a, b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0]));
+
+  if (!ordered.length || Number(ordered[0][1]) <= 0) return "uncertain";
+  return ordered[0][0];
+}
+
+function matchValue(config, dimension, observed, profile) {
+  if (isUnknown(observed) || !profile?.[dimension]) return null;
+
+  const target = profile[dimension].target;
+  const accepted = profile[dimension].accepted || [];
+  const mp = config.season_scoring?.match_points ||
+    config.scoring_algorithm?.dimension_match_values || {};
+  const adjacency = config.season_scoring?.adjacency?.[dimension] || {};
+
+  if (observed === target) return Number(mp.exact_target ?? 1);
+  if (accepted.includes(observed)) return Number(mp.accepted_value ?? 0.75);
+  if ((adjacency[target] || []).includes(observed)) {
+    return Number(mp.adjacent_value ?? 0.4);
+  }
+  return Number(mp.opposite_value ?? 0);
+}
+
 function baseScore(config, profile, dims) {
-  const weights=config.scoring_algorithm.dimension_weights, minConf=config.scoring_algorithm.minimum_dimension_confidence; let num=0,den=0;
-  for(const [d,w] of Object.entries(weights)){const r=dims[d]||{}, conf=Number(r.confidence||0), mv=matchValue(config,d,r.classification,profile); if(conf<minConf||mv===null)continue; num+=w*mv*conf; den+=w*conf;}
-  return den?round(100*num/den,1):0;
+  const weights = getDimensionWeights(config);
+  const minConf = Number(
+    config.scoring_algorithm?.minimum_dimension_confidence ??
+    config.season_scoring?.dimension_confidence?.minimum_for_use ??
+    0.4
+  );
+  const minAvailableWeight = Number(
+    config.scoring_algorithm?.minimum_available_dimension_weight ?? 0
+  );
+
+  let numerator = 0;
+  let denominator = 0;
+  let availableWeight = 0;
+  const breakdown = {};
+
+  for (const [dimension, rawWeight] of Object.entries(weights)) {
+    const weight = Number(rawWeight || 0);
+    const result = dims[dimension] || {};
+    const confidence = Number(result.confidence || 0);
+    const observed = resolveDimensionClassification(result);
+    const match = matchValue(config, dimension, observed, profile);
+
+    const usable = weight > 0 && confidence >= minConf && match !== null;
+    breakdown[dimension] = {
+      observed,
+      confidence: round(confidence, 3),
+      weight: round(weight, 3),
+      match_value: match,
+      usable
+    };
+
+    if (!usable) continue;
+
+    numerator += weight * match * confidence;
+    denominator += weight * confidence;
+    availableWeight += weight;
+  }
+
+  const score = denominator > 0 && availableWeight >= minAvailableWeight
+    ? round(100 * numerator / denominator, 1)
+    : 0;
+
+  return {
+    score,
+    available_weight: round(availableWeight, 3),
+    weighted_denominator: round(denominator, 4),
+    breakdown
+  };
 }
 function conditionMatches(condition,dims,features={}) {
   const c=String(condition).trim(); let left, options;
@@ -309,8 +391,26 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
   const level=score>=.8?"high":score>=.6?"medium":score>=.4?"low":"insufficient"; return{score:round(score,3),level};
 }
 function runScoring(config,dims,quality,features) {
-  const profiles=config.season_scoring.season_profiles, base=Object.fromEntries(Object.entries(profiles).map(([s,p])=>[s,baseScore(config,p,dims)])); const cross=applyCrossRules(config,base,dims); const excl=applyExclusions(config,cross.adjusted,dims,features);
-  const ranking=Object.keys(profiles).map(s=>({season_id:s,base_score:base[s],score_after_modifiers:round(excl.adjusted[s],1),hard_excluded:excl.hard[s],applied_rules:[...cross.applied[s],...excl.applied[s]]})).sort((a,b)=>b.score_after_modifiers-a.score_after_modifiers||a.season_id.localeCompare(b.season_id));
+  const profiles = config.season_scoring.season_profiles;
+  const baseDetails = Object.fromEntries(
+    Object.entries(profiles).map(([season, profile]) => [season, baseScore(config, profile, dims)])
+  );
+  const base = Object.fromEntries(
+    Object.entries(baseDetails).map(([season, detail]) => [season, detail.score])
+  );
+  const cross = applyCrossRules(config, base, dims);
+  const excl = applyExclusions(config, cross.adjusted, dims, features);
+  const ranking = Object.keys(profiles)
+    .map(season => ({
+      season_id: season,
+      base_score: base[season],
+      score_after_modifiers: round(excl.adjusted[season], 1),
+      hard_excluded: excl.hard[season],
+      score_breakdown: baseDetails[season].breakdown,
+      available_dimension_weight: baseDetails[season].available_weight,
+      applied_rules: [...cross.applied[season], ...excl.applied[season]]
+    }))
+    .sort((a,b) => b.score_after_modifiers - a.score_after_modifiers || a.season_id.localeCompare(b.season_id));
   const confusion=resolveConfusion(config,ranking,dims,features); if(confusion.triggered&&!confusion.unresolved&&confusion.winner){const i=ranking.findIndex(x=>x.season_id===confusion.winner); if(i>0)[ranking[0],ranking[i]]=[ranking[i],ranking[0]];}
   ranking.forEach((x,i)=>x.rank=i+1); const conf=finalConfidence(config,dims,ranking,quality,confusion); const best=ranking[0]; const insufficient=!best||best.score_after_modifiers<40||conf.level==="insufficient"||ranking.every(x=>x.hard_excluded);
   return{season_ranking:ranking,confusion_resolution:confusion,result:{best_match:insufficient?null:ranking[0].season_id,second_match:insufficient?null:ranking[1]?.season_id||null,third_match:insufficient?null:ranking[2]?.season_id||null,confidence:conf.score,confidence_percent:Math.round(conf.score*100),confidence_level:conf.level,request_better_photo:insufficient||quality==="poor"}};
@@ -322,4 +422,26 @@ const adapted=adaptExtractor(extractor);
 if(!adapted.quality.continue_analysis){return{ok:true,stage:"completed",runtime_version:ENGINE_RUNTIME_VERSION,engine_version:config.engine.version,quality:adapted.quality,dimension_results:{},season_ranking:[],result:{best_match:null,second_match:null,third_match:null,confidence:0,confidence_percent:0,confidence_level:"insufficient",request_better_photo:true}};}
 const dims={temperature:calculateTemperature(config,adapted.features,adapted.quality),value:calculateValue(config,adapted.features,adapted.quality),chroma:calculateChroma(config,adapted.features,adapted.quality),contrast:calculateContrast(config,adapted.features,adapted.quality)};
 const decision=runScoring(config,dims,adapted.quality.overall_quality,adapted.features);
-return{ok:true,stage:"completed",runtime_version:ENGINE_RUNTIME_VERSION,engine:{name:config.engine.name,version:config.engine.version,status:config.engine.status},extractor:{version:extractor.extractor_version,status:extractor.analysis_status,global_reliability:extractor.global_reliability},quality:adapted.quality,observed_colors:extractor.observed_colors,dimension_results:dims,...decision,loaded_files:files};
+return {
+  ok: true,
+  stage: "completed",
+  runtime_version: ENGINE_RUNTIME_VERSION,
+  engine: { name: config.engine.name, version: config.engine.version, status: config.engine.status },
+  extractor: { version: extractor.extractor_version, status: extractor.analysis_status, global_reliability: extractor.global_reliability },
+  quality: adapted.quality,
+  observed_colors: extractor.observed_colors,
+  dimension_results: dims,
+  scoring_diagnostics: {
+    resolved_dimensions: Object.fromEntries(
+      Object.entries(dims).map(([name, result]) => [name, {
+        original_classification: result.classification,
+        scoring_classification: resolveDimensionClassification(result),
+        confidence: result.confidence
+      }])
+    ),
+    dimension_weights: getDimensionWeights(config),
+    minimum_dimension_confidence: config.scoring_algorithm?.minimum_dimension_confidence ?? 0.4
+  },
+  ...decision,
+  loaded_files: files
+};
