@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.0.0
+ * DiArt Color Engine v4.0.1
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.0.0";
+const ENGINE_RUNTIME_VERSION = "4.0.1";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -538,9 +538,58 @@ function runScoring(config,dims,quality,features) {
       applied_rules: [...cross.applied[season], ...excl.applied[season]]
     }))
     .sort((a,b) => b.score_after_modifiers - a.score_after_modifiers || a.season_id.localeCompare(b.season_id));
-  const confusion=resolveConfusion(config,ranking,dims,features); if(confusion.triggered&&!confusion.unresolved&&confusion.winner){const i=ranking.findIndex(x=>x.season_id===confusion.winner); if(i>0)[ranking[0],ranking[i]]=[ranking[i],ranking[0]];}
-  ranking.forEach((x,i)=>x.rank=i+1); const conf=finalConfidence(config,dims,ranking,quality,confusion); const best=ranking[0]; const insufficient=!best||best.score_after_modifiers<40||conf.level==="insufficient"||ranking.every(x=>x.hard_excluded);
-  return{season_ranking:ranking,confusion_resolution:confusion,result:{best_match:insufficient?null:ranking[0].season_id,second_match:insufficient?null:ranking[1]?.season_id||null,third_match:insufficient?null:ranking[2]?.season_id||null,confidence:conf.score,confidence_percent:Math.round(conf.score*100),confidence_level:conf.level,request_better_photo:insufficient||quality==="poor"}};
+  const confusion=resolveConfusion(config,ranking,dims,features);
+  if(confusion.triggered&&!confusion.unresolved&&confusion.winner){
+    const i=ranking.findIndex(x=>x.season_id===confusion.winner);
+    if(i>0)[ranking[0],ranking[i]]=[ranking[i],ranking[0]];
+  }
+
+  ranking.forEach((x,i)=>x.rank=i+1);
+
+  const conf=finalConfidence(config,dims,ranking,quality,confusion);
+  const best=ranking[0];
+  const usableDimensions=Object.values(dims).filter(
+    x=>x && !isUnknown(x.classification) && Number(x.confidence||0)>=0.4
+  ).length;
+  const allExcluded=ranking.every(x=>x.hard_excluded);
+
+  const noResult=
+    !best ||
+    allExcluded ||
+    quality==="poor" ||
+    best.score_after_modifiers<40 ||
+    usableDimensions===0;
+
+  const provisional=
+    !noResult && (
+      conf.level==="insufficient" ||
+      confusion.unresolved ||
+      usableDimensions<3
+    );
+
+  const requestBetterPhoto=
+    quality==="poor" ||
+    usableDimensions<2 ||
+    (!noResult && conf.level==="insufficient" && best.score_after_modifiers<50);
+
+  return{
+    season_ranking:ranking,
+    confusion_resolution:confusion,
+    result:{
+      best_match:noResult?null:ranking[0].season_id,
+      second_match:noResult?null:ranking[1]?.season_id||null,
+      third_match:noResult?null:ranking[2]?.season_id||null,
+      confidence:conf.score,
+      confidence_percent:Math.round(conf.score*100),
+      confidence_level:conf.level,
+      decision_status:noResult?"insufficient":provisional?"provisional":"final",
+      usable_dimensions:usableDimensions,
+      score_gap_to_second:noResult||!ranking[1]?null:round(
+        ranking[0].score_after_modifiers-ranking[1].score_after_modifiers,1
+      ),
+      request_better_photo:noResult||requestBetterPhoto
+    }
+  };
 }
 
 const {config,files}=await loadConfig();
