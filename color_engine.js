@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.1.0
+ * DiArt Color Engine v5.0.0
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.1.0";
+const ENGINE_RUNTIME_VERSION = "5.0.0";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -157,12 +157,12 @@ function adaptExtractor(ex) {
         visible: ex.image_quality?.face_visible !== false,
         dominant_depth: skinDepth,
         temperature: skinTemp,
-        undertone_family: inferUndertoneFamily(ex),
+        undertone_family: oc.skin?.undertone_family || inferUndertoneFamily(ex),
         surface_redness: oc.skin?.redness_level || "unknown",
-        clarity: chromaToSkinHair(skinChroma),
-        translucency: "unknown",
-        natural_blush: "not_visible",
-        freckles: "unknown",
+        clarity: oc.skin?.clarity || chromaToSkinHair(skinChroma),
+        translucency: oc.skin?.translucency || "unknown",
+        natural_blush: oc.skin?.natural_blush || "not_visible",
+        freckles: oc.skin?.freckles || "unknown",
         observed_hex: oc.skin?.hex ?? null,
         confidence: clamp(confidenceMean([vf.skin_temperature?.confidence, vf.skin_value?.confidence, vf.skin_chroma?.confidence, oc.skin?.confidence]))
       },
@@ -171,11 +171,11 @@ function adaptExtractor(ex) {
         base_color: normalizeEyeColor(oc.eyes?.primary_color),
         temperature: eyeTemp,
         clarity: normalizeClarity(eyeChroma),
-        brightness: brightnessFromDepth(eyeDepth),
-        iris_contrast: collapseContrast(cf.skin_eye_value_difference?.level),
-        limbal_ring: "unknown",
-        golden_flecks: "unknown",
-        cool_gray_veil: String(oc.eyes?.secondary_color || "").includes("gray") ? "visible" : "unknown",
+        brightness: oc.eyes?.brightness || brightnessFromDepth(eyeDepth),
+        iris_contrast: oc.eyes?.iris_contrast || collapseContrast(cf.skin_eye_value_difference?.level),
+        limbal_ring: oc.eyes?.limbal_ring || "unknown",
+        golden_flecks: oc.eyes?.golden_flecks || "unknown",
+        cool_gray_veil: oc.eyes?.cool_gray_veil || (String(oc.eyes?.secondary_color || "").includes("gray") ? "visible" : "unknown"),
         observed_hex: oc.eyes?.hex ?? null,
         confidence: clamp(confidenceMean([vf.eye_temperature?.confidence, vf.eye_value?.confidence, vf.eye_chroma?.confidence, oc.eyes?.confidence]))
       },
@@ -184,15 +184,28 @@ function adaptExtractor(ex) {
         naturalness: naturalness(ex),
         depth: hairDepth,
         temperature: hairTemp,
-        undertone: hairTemp === "warm" || hairTemp === "neutral_warm" ? "golden" : hairTemp === "cool" || hairTemp === "neutral_cool" ? "ash" : "neutral",
-        clarity: chromaToSkinHair(hairChroma),
-        shine: "unknown",
-        natural_highlights: "not_visible",
+        undertone: oc.hair?.undertone || (hairTemp === "warm" || hairTemp === "neutral_warm" ? "golden" : hairTemp === "cool" || hairTemp === "neutral_cool" ? "ash" : "neutral"),
+        clarity: oc.hair?.clarity || chromaToSkinHair(hairChroma),
+        shine: oc.hair?.shine || "unknown",
+        natural_highlights: oc.hair?.natural_highlights || "not_visible",
         observed_hex: oc.hair?.hex ?? null,
         confidence: clamp(confidenceMean([vf.hair_temperature?.confidence, vf.hair_value?.confidence, vf.hair_chroma?.confidence, oc.hair?.confidence]))
       },
-      eyebrows: { visible: false, depth_relative_to_hair: "unknown", temperature: "uncertain", clarity: "unknown", confidence: 0 },
-      lips: { visible: false, natural_color: "unknown", temperature: "uncertain", depth: "unknown", clarity: "unknown", confidence: 0 },
+      eyebrows: {
+        visible: oc.eyebrows?.visible === true,
+        depth_relative_to_hair: oc.eyebrows?.depth_relative_to_hair || "unknown",
+        temperature: oc.eyebrows?.temperature_observation || "uncertain",
+        clarity: oc.eyebrows?.clarity || "unknown",
+        confidence: clamp(oc.eyebrows?.confidence || 0)
+      },
+      lips: {
+        visible: oc.lips?.visible === true,
+        natural_color: oc.lips?.natural_color || "unknown",
+        temperature: oc.lips?.temperature_observation || "uncertain",
+        depth: oc.lips?.depth || "unknown",
+        clarity: oc.lips?.clarity || "unknown",
+        confidence: clamp(oc.lips?.confidence || 0)
+      },
       contrast: {
         skin_hair_contrast: collapseContrast(cf.skin_hair_value_difference?.level),
         skin_eye_contrast: collapseContrast(cf.skin_eye_value_difference?.level),
@@ -201,14 +214,57 @@ function adaptExtractor(ex) {
         confidence: clamp(cf.overall_contrast_observation?.confidence || ex.global_reliability || 0)
       },
       overall_impression: {
-        dominant_temperature: majority([skinTemp, eyeTemp, hairTemp]),
-        dominant_value: majority([collapseDepth(skinDepth), collapseDepth(eyeDepth), collapseDepth(hairDepth)]),
-        dominant_chroma: majority([skinChroma, eyeChroma, hairChroma]),
-        dominant_contrast: overallContrast,
-        confidence: clamp(ex.global_reliability || 0)
+        dominant_temperature: ex.overall_impression?.dominant_temperature || majority([skinTemp, eyeTemp, hairTemp]),
+        dominant_value: ex.overall_impression?.dominant_value || majority([collapseDepth(skinDepth), collapseDepth(eyeDepth), collapseDepth(hairDepth)]),
+        dominant_chroma: ex.overall_impression?.dominant_chroma || majority([skinChroma, eyeChroma, hairChroma]),
+        dominant_contrast: ex.overall_impression?.dominant_contrast || overallContrast,
+        confidence: clamp(ex.overall_impression?.confidence || ex.global_reliability || 0)
       }
     }
   };
+}
+
+function calculateEvidenceReliability(config, extractorData, adapted) {
+  const cfg=config.evidence_reliability_engine||{};
+  const iq=extractorData.image_quality||{};
+  const qf=Number((cfg.quality_factors||{})[iq.status]??.75);
+  const lf=Number((cfg.lighting_factors||{})[iq.lighting_quality]??.75);
+  const cf=Number((cfg.color_cast_factors||{})[iq.color_cast]??.8);
+  const min=Number(cfg.minimum_multiplier??.15);
+  const rules=cfg.source_rules||{};
+
+  function source(name, observedConfidence, extras={}) {
+    const r=rules[name]||{};
+    let value=Number(r.base??1)*qf*lf*cf*clamp(observedConfidence||0);
+    if(iq.heavy_makeup_detected)value*=Number(r.heavy_makeup??1);
+    if(iq.beauty_filter_detected)value*=Number(r.beauty_filter??1);
+    if(iq.strong_shadows)value*=Number(r.strong_shadows??1);
+    if(iq.overexposure)value*=Number(r.overexposure??1);
+    if(iq.underexposure)value*=Number(r.underexposure??1);
+    for(const [key,val] of Object.entries(extras)) if(val&&r[val]!==undefined)value*=Number(r[val]);
+    return round(Math.max(min,Math.min(1,value)),3);
+  }
+
+  const f=adapted.features;
+  const hairNaturalness=extractorData.image_quality?.hair_naturalness||"unclear";
+  const sources={
+    skin:source("skin",f.skin?.confidence),
+    eyes:source("eyes",f.eyes?.confidence),
+    hair:source("hair",f.hair?.confidence,{naturalness:hairNaturalness}),
+    lips:source("lips",f.lips?.confidence),
+    eyebrows:source("eyebrows",f.eyebrows?.confidence),
+    contrast:source("contrast",f.contrast?.confidence),
+    overall:round(Math.max(min,Math.min(1,qf*lf*cf*clamp(f.overall_impression?.confidence||0))),3)
+  };
+
+  const mix=cfg.dimension_source_mix||{};
+  const dimensions={};
+  for(const [dimension,weights] of Object.entries(mix)){
+    let total=0,weight=0;
+    for(const [name,w] of Object.entries(weights)){total+=(sources[name]??min)*Number(w);weight+=Number(w);}
+    dimensions[dimension]=round(weight?total/weight:min,3);
+  }
+  return{version:cfg.version||"1.0.0",sources,dimensions};
 }
 
 function addMapping(totals, mapping, weight, confidence, evidence, meta) {
@@ -224,18 +280,18 @@ function normalizedScores(totals, used) {
 function qualityMultiplier(q) { return ({good:1, acceptable:.8, poor:0, unusable:0})[q] ?? 0; }
 
 function calculateTemperature(config, features, quality) {
-  const cfg = config.temperature_engine, totals={warm:0,cool:0,neutral:0}, evidence=[];
+  const cfg = config.temperature_engine, totals={warm:0,cool:0,neutral:0}, evidence=[]; const er=features.evidence_reliability?.sources||{};
   const sw=Object.fromEntries(cfg.evidence_priority.map(x=>[x.source,Number(x.weight)])); let used=0;
   const skin=features.skin||{}, sc=clamp(skin.confidence);
-  for (const [field,section,w] of [["temperature","temperature",.55],["undertone_family","undertone_family",.3],["natural_blush","natural_blush",.1],["freckles","freckles",.05]]) used += addMapping(totals,cfg.skin_rules[section]?.[skin[field]],sw.skin*w,sc,evidence,{source:"skin",field,observed_value:skin[field]});
+  for (const [field,section,w] of [["temperature","temperature",.55],["undertone_family","undertone_family",.3],["natural_blush","natural_blush",.1],["freckles","freckles",.05]]) used += addMapping(totals,cfg.skin_rules[section]?.[skin[field]],sw.skin*w*(er.skin??1),sc,evidence,{source:"skin",field,observed_value:skin[field]});
   const lips=features.lips||{}, lc=clamp(lips.confidence);
-  for (const [field,section,w] of [["temperature","temperature",.7],["natural_color","natural_color",.3]]) used += addMapping(totals,cfg.lips_rules[section]?.[lips[field]],sw.lips*w,lc,evidence,{source:"lips",field,observed_value:lips[field]});
+  for (const [field,section,w] of [["temperature","temperature",.7],["natural_color","natural_color",.3]]) used += addMapping(totals,cfg.lips_rules[section]?.[lips[field]],sw.lips*w*(er.lips??1),lc,evidence,{source:"lips",field,observed_value:lips[field]});
   const eyes=features.eyes||{}, ec=clamp(eyes.confidence);
-  used += addMapping(totals,cfg.eyes_rules.temperature?.[eyes.temperature],sw.eyes*.75,ec,evidence,{source:"eyes",field:"temperature",observed_value:eyes.temperature});
-  used += addMapping(totals,cfg.eyes_rules.supporting_markers?.[`golden_flecks_${eyes.golden_flecks}`],sw.eyes*.125,ec,evidence,{source:"eyes",field:"golden_flecks",observed_value:eyes.golden_flecks});
-  used += addMapping(totals,cfg.eyes_rules.supporting_markers?.[`cool_gray_veil_${eyes.cool_gray_veil}`],sw.eyes*.125,ec,evidence,{source:"eyes",field:"cool_gray_veil",observed_value:eyes.cool_gray_veil});
+  used += addMapping(totals,cfg.eyes_rules.temperature?.[eyes.temperature],sw.eyes*.75*(er.eyes??1),ec,evidence,{source:"eyes",field:"temperature",observed_value:eyes.temperature});
+  used += addMapping(totals,cfg.eyes_rules.supporting_markers?.[`golden_flecks_${eyes.golden_flecks}`],sw.eyes*.125*(er.eyes??1),ec,evidence,{source:"eyes",field:"golden_flecks",observed_value:eyes.golden_flecks});
+  used += addMapping(totals,cfg.eyes_rules.supporting_markers?.[`cool_gray_veil_${eyes.cool_gray_veil}`],sw.eyes*.125*(er.eyes??1),ec,evidence,{source:"eyes",field:"cool_gray_veil",observed_value:eyes.cool_gray_veil});
   const hair=features.hair||{}, hc=clamp(hair.confidence), hm=({natural:1,likely_natural:.85,possibly_colored:.45,colored:0,unknown:.35})[hair.naturalness]??.35;
-  for (const [field,section,w] of [["temperature","temperature",.55],["undertone","undertone",.3],["natural_highlights","natural_highlights",.15]]) used += addMapping(totals,cfg.hair_rules[section]?.[hair[field]],sw.hair*w*hm,hc,evidence,{source:"hair",field,observed_value:hair[field]});
+  for (const [field,section,w] of [["temperature","temperature",.55],["undertone","undertone",.3],["natural_highlights","natural_highlights",.15]]) used += addMapping(totals,cfg.hair_rules[section]?.[hair[field]],sw.hair*w*hm*(er.hair??1),hc,evidence,{source:"hair",field,observed_value:hair[field]});
   const scores=normalizedScores(totals,used), gap=scores.warm-scores.cool; let classification="uncertain";
   if (used>=cfg.global_rules.minimum_total_evidence_weight) {
     if(scores.warm>=65&&gap>=20) classification="warm"; else if(scores.cool>=65&&-gap>=20) classification="cool"; else if(scores.warm>=52&&gap>=8) classification="neutral_warm"; else if(scores.cool>=52&&-gap>=8) classification="neutral_cool"; else if(Math.abs(gap)<=7) classification="neutral"; else classification=gap>0?"neutral_warm":"neutral_cool";
@@ -245,11 +301,11 @@ function calculateTemperature(config, features, quality) {
 }
 
 function calculateValue(config, features, quality) {
-  const cfg=config.value_engine, totals={light:0,medium:0,deep:0}, evidence=[]; const sw=Object.fromEntries(cfg.evidence_priority.map(x=>[x.source,Number(x.weight)])); let used=0;
-  const skin=features.skin||{}; used+=addMapping(totals,cfg.mapping.skin_depth?.[skin.dominant_depth],sw.skin,clamp(skin.confidence),evidence,{source:"skin",field:"dominant_depth",observed_value:skin.dominant_depth});
-  const hair=features.hair||{}, hm=cfg.global_rules.hair_handling?.[hair.naturalness]??.35; used+=addMapping(totals,cfg.mapping.hair_depth?.[hair.depth],sw.hair*hm,clamp(hair.confidence),evidence,{source:"hair",field:"depth",observed_value:hair.depth});
-  const eyes=features.eyes||{}, ec=clamp(eyes.confidence); used+=addMapping(totals,cfg.mapping.eye_base_color?.[eyes.base_color],sw.eyes*.85,ec,evidence,{source:"eyes",field:"base_color",observed_value:eyes.base_color}); used+=addMapping(totals,cfg.mapping.eye_brightness_modifier?.[eyes.brightness],sw.eyes*.15,ec,evidence,{source:"eyes",field:"brightness",observed_value:eyes.brightness});
-  const overall=features.overall_impression||{}; used+=addMapping(totals,cfg.mapping.overall_value?.[overall.dominant_value],sw.overall_impression,clamp(overall.confidence),evidence,{source:"overall_impression",field:"dominant_value",observed_value:overall.dominant_value});
+  const cfg=config.value_engine, totals={light:0,medium:0,deep:0}, evidence=[]; const er=features.evidence_reliability?.sources||{}; const sw=Object.fromEntries(cfg.evidence_priority.map(x=>[x.source,Number(x.weight)])); let used=0;
+  const skin=features.skin||{}; used+=addMapping(totals,cfg.mapping.skin_depth?.[skin.dominant_depth],sw.skin*(er.skin??1),clamp(skin.confidence),evidence,{source:"skin",field:"dominant_depth",observed_value:skin.dominant_depth});
+  const hair=features.hair||{}, hm=cfg.global_rules.hair_handling?.[hair.naturalness]??.35; used+=addMapping(totals,cfg.mapping.hair_depth?.[hair.depth],sw.hair*hm*(er.hair??1),clamp(hair.confidence),evidence,{source:"hair",field:"depth",observed_value:hair.depth});
+  const eyes=features.eyes||{}, ec=clamp(eyes.confidence); used+=addMapping(totals,cfg.mapping.eye_base_color?.[eyes.base_color],sw.eyes*.85*(er.eyes??1),ec,evidence,{source:"eyes",field:"base_color",observed_value:eyes.base_color}); used+=addMapping(totals,cfg.mapping.eye_brightness_modifier?.[eyes.brightness],sw.eyes*.15*(er.eyes??1),ec,evidence,{source:"eyes",field:"brightness",observed_value:eyes.brightness});
+  const overall=features.overall_impression||{}; used+=addMapping(totals,cfg.mapping.overall_value?.[overall.dominant_value],sw.overall_impression*(er.overall??1),clamp(overall.confidence),evidence,{source:"overall_impression",field:"dominant_value",observed_value:overall.dominant_value});
   const scores=normalizedScores(totals,used), ordered=Object.entries(scores).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])); let classification="uncertain";
   const mixed=scores.light>=25&&scores.deep>=25&&Math.abs(scores.light-scores.deep)<=15&&scores.medium>=30;
   if(used>=cfg.global_rules.minimum_total_evidence_weight) classification=mixed?"medium":((ordered[0][1]-ordered[1][1]>=5)?ordered[0][0]:"uncertain");
@@ -257,12 +313,12 @@ function calculateValue(config, features, quality) {
 }
 
 function calculateChroma(config, features, quality) {
-  const cfg=config.chroma_engine, totals={bright:0,clear:0,balanced:0,soft:0,muted:0}, evidence=[]; const sw=Object.fromEntries(cfg.evidence_priority.map(x=>[x.source,Number(x.weight)])); let used=0;
-  const skin=features.skin||{}, sc=clamp(skin.confidence); used+=addMapping(totals,cfg.mapping.skin_clarity?.[skin.clarity],sw.skin*.8,sc,evidence,{source:"skin",field:"clarity",observed_value:skin.clarity}); used+=addMapping(totals,cfg.mapping.skin_translucency?.[skin.translucency],sw.skin*.2,sc,evidence,{source:"skin",field:"translucency",observed_value:skin.translucency});
-  const eyes=features.eyes||{}, ec=clamp(eyes.confidence); for(const [f,m,w] of [["clarity","eyes_clarity",.5],["brightness","eyes_brightness",.2],["iris_contrast","iris_contrast",.2],["limbal_ring","limbal_ring",.1]]) used+=addMapping(totals,cfg.mapping[m]?.[eyes[f]],sw.eyes*w,ec,evidence,{source:"eyes",field:f,observed_value:eyes[f]});
-  const hair=features.hair||{}, hc=clamp(hair.confidence), hm=cfg.global_rules.hair_handling?.[hair.naturalness]??.35; used+=addMapping(totals,cfg.mapping.hair_clarity?.[hair.clarity],sw.hair*.75*hm,hc,evidence,{source:"hair",field:"clarity",observed_value:hair.clarity}); used+=addMapping(totals,cfg.mapping.hair_shine?.[hair.shine],sw.hair*.25*hm,hc,evidence,{source:"hair",field:"shine",observed_value:hair.shine});
-  const contrast=features.contrast||{}; used+=addMapping(totals,cfg.mapping.feature_definition?.[contrast.feature_definition],sw.contrast,clamp(contrast.confidence),evidence,{source:"contrast",field:"feature_definition",observed_value:contrast.feature_definition});
-  const overall=features.overall_impression||{}; used+=addMapping(totals,cfg.mapping.overall_chroma?.[overall.dominant_chroma],sw.overall_impression,clamp(overall.confidence),evidence,{source:"overall_impression",field:"dominant_chroma",observed_value:overall.dominant_chroma});
+  const cfg=config.chroma_engine, totals={bright:0,clear:0,balanced:0,soft:0,muted:0}, evidence=[]; const er=features.evidence_reliability?.sources||{}; const sw=Object.fromEntries(cfg.evidence_priority.map(x=>[x.source,Number(x.weight)])); let used=0;
+  const skin=features.skin||{}, sc=clamp(skin.confidence); used+=addMapping(totals,cfg.mapping.skin_clarity?.[skin.clarity],sw.skin*.8*(er.skin??1),sc,evidence,{source:"skin",field:"clarity",observed_value:skin.clarity}); used+=addMapping(totals,cfg.mapping.skin_translucency?.[skin.translucency],sw.skin*.2*(er.skin??1),sc,evidence,{source:"skin",field:"translucency",observed_value:skin.translucency});
+  const eyes=features.eyes||{}, ec=clamp(eyes.confidence); for(const [f,m,w] of [["clarity","eyes_clarity",.5],["brightness","eyes_brightness",.2],["iris_contrast","iris_contrast",.2],["limbal_ring","limbal_ring",.1]]) used+=addMapping(totals,cfg.mapping[m]?.[eyes[f]],sw.eyes*w*(er.eyes??1),ec,evidence,{source:"eyes",field:f,observed_value:eyes[f]});
+  const hair=features.hair||{}, hc=clamp(hair.confidence), hm=cfg.global_rules.hair_handling?.[hair.naturalness]??.35; used+=addMapping(totals,cfg.mapping.hair_clarity?.[hair.clarity],sw.hair*.75*hm*(er.hair??1),hc,evidence,{source:"hair",field:"clarity",observed_value:hair.clarity}); used+=addMapping(totals,cfg.mapping.hair_shine?.[hair.shine],sw.hair*.25*hm*(er.hair??1),hc,evidence,{source:"hair",field:"shine",observed_value:hair.shine});
+  const contrast=features.contrast||{}; used+=addMapping(totals,cfg.mapping.feature_definition?.[contrast.feature_definition],sw.contrast*(er.contrast??1),clamp(contrast.confidence),evidence,{source:"contrast",field:"feature_definition",observed_value:contrast.feature_definition});
+  const overall=features.overall_impression||{}; used+=addMapping(totals,cfg.mapping.overall_chroma?.[overall.dominant_chroma],sw.overall_impression*(er.overall??1),clamp(overall.confidence),evidence,{source:"overall_impression",field:"dominant_chroma",observed_value:overall.dominant_chroma});
   const scores=normalizedScores(totals,used), ordered=Object.entries(scores).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])); let classification="uncertain";
   let markers=(overall.dominant_chroma==="bright"?2:0)+(contrast.feature_definition==="striking"?2:0)+(eyes.clarity==="sparkling"?1:0)+(eyes.brightness==="high"?1:0)+(eyes.iris_contrast==="high"?1:0)+(contrast.overall_contrast==="high"?1:0);
   const brightOverride=scores.bright>=55&&(scores.clear-scores.bright)<=18&&markers>=3;
@@ -271,13 +327,13 @@ function calculateChroma(config, features, quality) {
 }
 
 function calculateContrast(config, features, quality) {
-  const cfg=config.contrast_engine, totals={low:0,medium:0,high:0}, evidence=[]; const sw=Object.fromEntries(cfg.evidence_priority.map(x=>[x.source,Number(x.weight)])); let used=0;
+  const cfg=config.contrast_engine, totals={low:0,medium:0,high:0}, evidence=[]; const er=features.evidence_reliability?.sources||{}; const sw=Object.fromEntries(cfg.evidence_priority.map(x=>[x.source,Number(x.weight)])); let used=0;
   const c=features.contrast||{}, cc=clamp(c.confidence), hair=features.hair||{}, hm=cfg.global_rules.hair_handling?.[hair.naturalness]??.35;
-  used+=addMapping(totals,cfg.mapping.skin_hair_contrast?.[c.skin_hair_contrast],sw.skin_hair_contrast*hm,cc,evidence,{source:"skin_hair_contrast",field:"skin_hair_contrast",observed_value:c.skin_hair_contrast});
-  used+=addMapping(totals,cfg.mapping.skin_eye_contrast?.[c.skin_eye_contrast],sw.skin_eye_contrast,cc,evidence,{source:"skin_eye_contrast",field:"skin_eye_contrast",observed_value:c.skin_eye_contrast});
-  used+=addMapping(totals,cfg.mapping.feature_definition?.[c.feature_definition],sw.feature_definition,cc,evidence,{source:"feature_definition",field:"feature_definition",observed_value:c.feature_definition});
-  const eyes=features.eyes||{}; used+=addMapping(totals,cfg.mapping.iris_contrast?.[eyes.iris_contrast],sw.iris_contrast,clamp(eyes.confidence),evidence,{source:"iris_contrast",field:"iris_contrast",observed_value:eyes.iris_contrast});
-  const overall=features.overall_impression||{}; used+=addMapping(totals,cfg.mapping.overall_contrast?.[overall.dominant_contrast],sw.overall_impression,clamp(overall.confidence),evidence,{source:"overall_impression",field:"dominant_contrast",observed_value:overall.dominant_contrast});
+  used+=addMapping(totals,cfg.mapping.skin_hair_contrast?.[c.skin_hair_contrast],sw.skin_hair_contrast*hm*(er.contrast??1),cc,evidence,{source:"skin_hair_contrast",field:"skin_hair_contrast",observed_value:c.skin_hair_contrast});
+  used+=addMapping(totals,cfg.mapping.skin_eye_contrast?.[c.skin_eye_contrast],sw.skin_eye_contrast*(er.contrast??1),cc,evidence,{source:"skin_eye_contrast",field:"skin_eye_contrast",observed_value:c.skin_eye_contrast});
+  used+=addMapping(totals,cfg.mapping.feature_definition?.[c.feature_definition],sw.feature_definition*(er.contrast??1),cc,evidence,{source:"feature_definition",field:"feature_definition",observed_value:c.feature_definition});
+  const eyes=features.eyes||{}; used+=addMapping(totals,cfg.mapping.iris_contrast?.[eyes.iris_contrast],sw.iris_contrast*(er.eyes??1),clamp(eyes.confidence),evidence,{source:"iris_contrast",field:"iris_contrast",observed_value:eyes.iris_contrast});
+  const overall=features.overall_impression||{}; used+=addMapping(totals,cfg.mapping.overall_contrast?.[overall.dominant_contrast],sw.overall_impression*(er.overall??1),clamp(overall.confidence),evidence,{source:"overall_impression",field:"dominant_contrast",observed_value:overall.dominant_contrast});
   const scores=normalizedScores(totals,used), ordered=Object.entries(scores).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])); let classification="uncertain";
   if(used>=cfg.global_rules.minimum_total_evidence_weight) classification=(ordered[0][1]-ordered[1][1]>=5)?ordered[0][0]:"uncertain";
   return {classification,confidence:round(Math.min(1,used/Object.values(sw).reduce((a,b)=>a+b,0))*qualityMultiplier(quality.overall_quality),3),scores,evidence,conflicts:[]};
@@ -737,8 +793,9 @@ function runScoring(config,dims,quality,features) {
 }
 
 const {config,files}=await loadConfig();
-assert(config.engine&&config.temperature_engine&&config.value_engine&&config.chroma_engine&&config.contrast_engine&&config.season_scoring,"configuration incomplete");
+assert(config.engine&&config.evidence_reliability_engine&&config.temperature_engine&&config.value_engine&&config.chroma_engine&&config.contrast_engine&&config.season_scoring,"configuration incomplete");
 const adapted=adaptExtractor(extractor);
+adapted.features.evidence_reliability=calculateEvidenceReliability(config,extractor,adapted);
 if(!adapted.quality.continue_analysis){return{ok:true,stage:"completed",runtime_version:ENGINE_RUNTIME_VERSION,engine_version:config.engine.version,quality:adapted.quality,dimension_results:{},season_ranking:[],result:{best_match:null,second_match:null,third_match:null,confidence:0,confidence_percent:0,confidence_level:"insufficient",request_better_photo:true}};}
 const dims={temperature:calculateTemperature(config,adapted.features,adapted.quality),value:calculateValue(config,adapted.features,adapted.quality),chroma:calculateChroma(config,adapted.features,adapted.quality),contrast:calculateContrast(config,adapted.features,adapted.quality)};
 const decision=runScoring(config,dims,adapted.quality.overall_quality,adapted.features);
@@ -750,6 +807,7 @@ return {
   extractor: { version: extractor.extractor_version, status: extractor.analysis_status, global_reliability: extractor.global_reliability },
   quality: adapted.quality,
   observed_colors: extractor.observed_colors,
+  evidence_reliability: adapted.features.evidence_reliability,
   dimension_results: dims,
   scoring_diagnostics: {
     resolved_dimensions: Object.fromEntries(
