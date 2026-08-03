@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.6.0
+ * DiArt Color Engine v4.7.0
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.6.0";
+const ENGINE_RUNTIME_VERSION = "4.7.0";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -510,13 +510,13 @@ function calculateEvidenceReliability(extractorData, adaptedData) {
   );
 
   return {
-    mode: "all_dimensions",
+    mode: "all_dimensions_and_season_scoring",
     applied_to_calculations: {
       temperature: true,
       value: true,
       chroma: true,
       contrast: true,
-      season_scoring: false
+      season_scoring: true
     },
     quality_factor: round(qualityFactor, 3),
     sources,
@@ -1637,51 +1637,171 @@ function matchValue(config, dimension, observed, profile) {
 
 function baseScore(config, profile, dims) {
   const weights = getDimensionWeights(config);
+
   const minConf = Number(
     config.scoring_algorithm?.minimum_dimension_confidence ??
     config.season_scoring?.dimension_confidence?.minimum_for_use ??
     0.4
   );
+
   const minAvailableWeight = Number(
-    config.scoring_algorithm?.minimum_available_dimension_weight ?? 0
+    config.scoring_algorithm?.minimum_available_dimension_weight ??
+    0
+  );
+
+  const uncertainFactor = Number(
+    config.scoring_algorithm?.uncertain_dimension_factor ??
+    0.45
   );
 
   let numerator = 0;
   let denominator = 0;
   let availableWeight = 0;
+  let effectiveAvailableWeight = 0;
+
   const breakdown = {};
 
-  for (const [dimension, rawWeight] of Object.entries(weights)) {
-    const weight = Number(rawWeight || 0);
-    const result = dims[dimension] || {};
-    const confidence = Number(result.confidence || 0);
-    const observed = resolveDimensionClassification(result);
-    const match = matchValue(config, dimension, observed, profile);
+  function scoreSeparation(result) {
+    const values = Object.values(result?.scores || {})
+      .map(Number)
+      .filter(Number.isFinite)
+      .sort((a, b) => b - a);
 
-    const usable = weight > 0 && confidence >= minConf && match !== null;
+    if (values.length < 2) return 0;
+
+    return clamp(
+      Math.max(0, values[0] - values[1]) / 20
+    );
+  }
+
+  for (const [dimension, rawWeight] of Object.entries(weights)) {
+    const baseWeight = Number(rawWeight || 0);
+    const result = dims[dimension] || {};
+
+    const rawConfidence = clamp(
+      Number(result.confidence || 0)
+    );
+
+    const rawClassification = result.classification;
+    const classificationWasUncertain =
+      isUnknown(rawClassification);
+
+    const observed = resolveDimensionClassification(
+      result
+    );
+
+    const match = matchValue(
+      config,
+      dimension,
+      observed,
+      profile
+    );
+
+    const reliabilityCoverage = clamp(
+      Number(
+        result.reliability?.coverage ??
+        result.reliability?.dimension_reliability ??
+        1
+      )
+    );
+
+    const separation = scoreSeparation(result);
+
+    /*
+     * Separation does not replace confidence.
+     * It only slightly reduces influence when the dimension's
+     * internal candidates are nearly tied.
+     */
+    const separationFactor =
+      0.75 + 0.25 * separation;
+
+    const classificationFactor =
+      classificationWasUncertain
+        ? uncertainFactor
+        : 1;
+
+    const confidenceEligible =
+      rawConfidence >= minConf ||
+      (
+        classificationWasUncertain &&
+        rawConfidence >= minConf * 0.75
+      );
+
+    const effectiveWeight =
+      baseWeight *
+      rawConfidence *
+      reliabilityCoverage *
+      separationFactor *
+      classificationFactor;
+
+    const usable =
+      baseWeight > 0 &&
+      confidenceEligible &&
+      match !== null &&
+      effectiveWeight > 0;
+
     breakdown[dimension] = {
       observed,
-      confidence: round(confidence, 3),
-      weight: round(weight, 3),
+      raw_classification: rawClassification,
+      classification_was_uncertain:
+        classificationWasUncertain,
+      confidence: round(rawConfidence, 3),
+      reliability_coverage: round(
+        reliabilityCoverage,
+        3
+      ),
+      score_separation: round(separation, 3),
+      separation_factor: round(
+        separationFactor,
+        3
+      ),
+      classification_factor: round(
+        classificationFactor,
+        3
+      ),
+      base_weight: round(baseWeight, 3),
+      effective_weight: round(
+        effectiveWeight,
+        4
+      ),
       match_value: match,
+      weighted_match_contribution:
+        usable
+          ? round(effectiveWeight * match, 4)
+          : 0,
       usable
     };
 
     if (!usable) continue;
 
-    numerator += weight * match * confidence;
-    denominator += weight * confidence;
-    availableWeight += weight;
+    numerator += effectiveWeight * match;
+    denominator += effectiveWeight;
+
+    availableWeight += baseWeight;
+    effectiveAvailableWeight += effectiveWeight;
   }
 
-  const score = denominator > 0 && availableWeight >= minAvailableWeight
-    ? round(100 * numerator / denominator, 1)
-    : 0;
+  const score =
+    denominator > 0 &&
+    availableWeight >= minAvailableWeight
+      ? round(100 * numerator / denominator, 1)
+      : 0;
 
   return {
     score,
-    available_weight: round(availableWeight, 3),
-    weighted_denominator: round(denominator, 4),
+    available_weight: round(
+      availableWeight,
+      3
+    ),
+    effective_available_weight: round(
+      effectiveAvailableWeight,
+      4
+    ),
+    weighted_denominator: round(
+      denominator,
+      4
+    ),
+    reliability_aware: true,
     breakdown
   };
 }
@@ -1983,8 +2103,16 @@ function runScoring(config,dims,quality,features) {
       hard_excluded: excl.hard[season],
       hard_exclusion_reasons: excl.hardReasons[season],
       score_breakdown: baseDetails[season].breakdown,
-      available_dimension_weight: baseDetails[season].available_weight,
-      applied_rules: [...cross.applied[season], ...excl.applied[season]]
+      available_dimension_weight:
+        baseDetails[season].available_weight,
+      effective_dimension_weight:
+        baseDetails[season].effective_available_weight,
+      reliability_aware_scoring:
+        baseDetails[season].reliability_aware,
+      applied_rules: [
+        ...cross.applied[season],
+        ...excl.applied[season]
+      ]
     }))
     .sort((a,b) => b.score_after_modifiers - a.score_after_modifiers || a.season_id.localeCompare(b.season_id));
   const confusion=resolveConfusion(config,ranking,dims,features);
@@ -2020,8 +2148,37 @@ function runScoring(config,dims,quality,features) {
     usableDimensions<2 ||
     (!noResult && conf.level==="insufficient" && best.score_after_modifiers<50);
 
+  const scoringDiagnostics = {
+    mode: "reliability_aware",
+    formula:
+      "base_weight × dimension_confidence × reliability_coverage × score_separation_factor × classification_factor",
+    uncertain_dimension_factor: Number(
+      config.scoring_algorithm?.uncertain_dimension_factor ??
+      0.45
+    ),
+    dimensions: Object.fromEntries(
+      Object.entries(dims).map(([name, result]) => [
+        name,
+        {
+          classification: result.classification,
+          confidence: round(
+            Number(result.confidence || 0),
+            3
+          ),
+          reliability_coverage: round(
+            Number(
+              result.reliability?.coverage ?? 1
+            ),
+            3
+          )
+        }
+      ])
+    )
+  };
+
   return{
     season_ranking:ranking,
+    scoring_diagnostics:scoringDiagnostics,
     confusion_resolution:confusion,
     result:{
       best_match:noResult?null:ranking[0].season_id,
