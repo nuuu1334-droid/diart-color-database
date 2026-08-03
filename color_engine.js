@@ -1,10 +1,32 @@
 /**
- * DiArt Color Engine v4.0.0-rc.2
+ * FINAL STABLE COLOR ENGINE FILE
+ *
+ * This file contains the complete Color Engine pipeline:
+ * - modular configuration loader
+ * - Feature Extractor adapter
+ * - quality gate
+ * - Temperature Engine
+ * - Value Engine
+ * - Chroma Engine
+ * - Contrast Engine
+ * - season scoring for all 12 seasons
+ * - cross-dimension modifiers
+ * - exclusion rules
+ * - confusion resolution
+ * - confidence calculation
+ * - final season selection
+ *
+ * Further calibration should be performed through JSON modules in GitHub,
+ * without editing this JavaScript file in Make.
+ */
+
+/**
+ * DiArt Color Engine v4.0.0
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.0.0-rc.2";
+const ENGINE_RUNTIME_VERSION = "4.0.0";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -352,29 +374,132 @@ function baseScore(config, profile, dims) {
     breakdown
   };
 }
+function getConditionObservation(condition,dims,features={}) {
+  const c=String(condition).trim();
+  let left, options;
+  if(c.includes(" in [")){
+    [left,options]=c.split(" in [");
+    options=new Set(options.replace(/\]$/,'').split(',').map(x=>x.trim()));
+  } else if(c.includes(" == ")){
+    const p=c.split(" == ");
+    left=p[0];
+    options=new Set([p[1].trim()]);
+  } else {
+    return {matched:false, observed:undefined, confidence:0, dimension:null};
+  }
+
+  left=left.trim();
+  let observed;
+  let confidence=0;
+  let dimension=null;
+
+  if(["temperature","value","chroma","contrast"].includes(left)) {
+    dimension=left;
+    observed=dims[left]?.classification;
+    confidence=Number(dims[left]?.confidence||0);
+  } else if(left.endsWith("_engine.classification")) {
+    dimension=left.split("_engine")[0];
+    observed=dims[dimension]?.classification;
+    confidence=Number(dims[dimension]?.confidence||0);
+  } else if(left==="feature_definition") {
+    observed=features.contrast?.feature_definition;
+    confidence=Number(features.contrast?.confidence||dims.contrast?.confidence||0);
+  } else {
+    let node=features;
+    for(const part of left.split('.')) node=node&&typeof node==='object'?node[part]:undefined;
+    observed=node;
+    const source=left.split('.')[0];
+    confidence=Number(features[source]?.confidence||0);
+  }
+
+  return {matched:options.has(observed), observed, confidence, dimension, field:left};
+}
 function conditionMatches(condition,dims,features={}) {
-  const c=String(condition).trim(); let left, options;
-  if(c.includes(" in [")){[left,options]=c.split(" in ["); options=new Set(options.replace(/\]$/,'').split(',').map(x=>x.trim()));}
-  else if(c.includes(" == ")){const p=c.split(" == "); left=p[0]; options=new Set([p[1].trim()]);} else return false;
-  left=left.trim(); let observed;
-  if(["temperature","value","chroma","contrast"].includes(left)) observed=dims[left]?.classification;
-  else if(left.endsWith("_engine.classification")) observed=dims[left.split("_engine")[0]]?.classification;
-  else if(left==="feature_definition") observed=features.contrast?.feature_definition;
-  else {let node=features; for(const part of left.split('.')) node=node&&typeof node==='object'?node[part]:undefined; observed=node;}
-  return options.has(observed);
+  return getConditionObservation(condition,dims,features).matched;
 }
 function applyCrossRules(config,scores,dims) {
   const adjusted={...scores}, applied=Object.fromEntries(Object.keys(scores).map(s=>[s,[]]));
-  for(const rule of config.exclusion_rules.cross_dimension_rules||[]){let ok=true; for(const [d,e] of Object.entries(rule.when||{})){const o=dims[d]?.classification; if(Array.isArray(e)?!e.includes(o):o!==e){ok=false;break;}} if(!ok)continue;
-    for(const s of rule.effects?.boost||[]) if(s in adjusted){adjusted[s]=clamp(adjusted[s]+6,0,100);applied[s].push(`cross_boost:${rule.id}`);} for(const s of rule.effects?.penalize||[]) if(s in adjusted){adjusted[s]=clamp(adjusted[s]-8,0,100);applied[s].push(`cross_penalty:${rule.id}`);}
-  } return {adjusted,applied};
+  const scale=config.exclusion_rules?.penalty_scale||{};
+  const boostValue=Math.abs(Number(scale.minor??-4))+2;
+  const penaltyValue=Math.abs(Number(scale.moderate??-8));
+
+  for(const rule of config.exclusion_rules?.cross_dimension_rules||[]){
+    let ok=true;
+    const evidence=[];
+    for(const [d,e] of Object.entries(rule.when||{})){
+      const o=dims[d]?.classification;
+      const matched=Array.isArray(e)?e.includes(o):o===e;
+      if(!matched){ok=false;break;}
+      evidence.push({dimension:d,observed:o,confidence:Number(dims[d]?.confidence||0)});
+    }
+    if(!ok)continue;
+
+    const averageConfidence=evidence.length?evidence.reduce((a,b)=>a+b.confidence,0)/evidence.length:0;
+    if(averageConfidence<0.4)continue;
+
+    for(const s of rule.effects?.boost||[]) if(s in adjusted){
+      adjusted[s]=clamp(adjusted[s]+boostValue,0,100);
+      applied[s].push({type:"cross_boost",rule_id:rule.id,points:boostValue,reason:rule.reason,evidence});
+    }
+    for(const s of rule.effects?.penalize||[]) if(s in adjusted){
+      adjusted[s]=clamp(adjusted[s]-penaltyValue,0,100);
+      applied[s].push({type:"cross_penalty",rule_id:rule.id,points:-penaltyValue,reason:rule.reason,evidence});
+    }
+  }
+  return {adjusted,applied};
 }
 function applyExclusions(config,scores,dims,features) {
-  const adjusted={...scores}, hard=Object.fromEntries(Object.keys(scores).map(s=>[s,false])), applied=Object.fromEntries(Object.keys(scores).map(s=>[s,[]]));
-  for(const [season,rules] of Object.entries(config.exclusion_rules.season_rules||{})){
-    for(const rule of rules.strong_penalties||[]) if(conditionMatches(rule.condition,dims,features)){adjusted[season]=clamp(adjusted[season]-15,0,100);applied[season].push(`strong_penalty:${rule.reason}`);}
-    for(const rule of rules.hard_exclusions||[]) if(conditionMatches(rule.condition,dims,features)){adjusted[season]=0;hard[season]=true;applied[season].push(`hard_exclusion:${rule.reason}`);}
-  } return {adjusted,hard,applied};
+  const rulesConfig=config.exclusion_rules||{};
+  const scale=rulesConfig.penalty_scale||{};
+  const adjusted={...scores};
+  const hard=Object.fromEntries(Object.keys(scores).map(s=>[s,false]));
+  const applied=Object.fromEntries(Object.keys(scores).map(s=>[s,[]]));
+  const hardReasons=Object.fromEntries(Object.keys(scores).map(s=>[s,[]]));
+  const scoreBefore={...scores};
+  const qualityOk=features?.quality?.continue_analysis!==false;
+
+  if(!qualityOk) return {adjusted,hard,applied,hardReasons,scoreBefore};
+
+  for(const [season,rules] of Object.entries(rulesConfig.season_rules||{})){
+    if(!(season in adjusted)) continue;
+
+    for(const rule of rules.strong_penalties||[]){
+      const ev=getConditionObservation(rule.condition,dims,features);
+      if(!ev.matched || ev.confidence<0.4) continue;
+      const severity=ev.confidence>=0.6?"strong":"moderate";
+      const penalty=Math.abs(Number(scale[severity]??(severity==="strong"?-15:-8)));
+      adjusted[season]=clamp(adjusted[season]-penalty,0,100);
+      applied[season].push({type:`${severity}_penalty`,condition:rule.condition,points:-penalty,reason:rule.reason,observed:ev.observed,confidence:round(ev.confidence,3)});
+    }
+
+    const hardEvidence=[];
+    for(const rule of rules.hard_exclusions||[]){
+      const ev=getConditionObservation(rule.condition,dims,features);
+      if(ev.matched) hardEvidence.push({rule,ev});
+    }
+
+    const veryStrong=hardEvidence.filter(x=>x.ev.confidence>=0.75);
+    const independentStrong=hardEvidence.filter(x=>x.ev.confidence>=0.60);
+    const independentDimensions=new Set(independentStrong.map(x=>x.ev.dimension||x.ev.field));
+    const qualifies=veryStrong.length>=1 || independentDimensions.size>=2;
+
+    if(qualifies){
+      hard[season]=true;
+      adjusted[season]=0;
+      for(const item of hardEvidence){
+        hardReasons[season].push(item.rule.reason);
+        applied[season].push({type:"hard_exclusion",condition:item.rule.condition,points:Number(scale.hard_exclusion??-30),reason:item.rule.reason,observed:item.ev.observed,confidence:round(item.ev.confidence,3)});
+      }
+    } else {
+      for(const item of hardEvidence){
+        if(item.ev.confidence<0.4) continue;
+        const penalty=Math.abs(Number(scale.strong??-15));
+        adjusted[season]=clamp(adjusted[season]-penalty,0,100);
+        applied[season].push({type:"strong_penalty_from_unconfirmed_hard_rule",condition:item.rule.condition,points:-penalty,reason:item.rule.reason,observed:item.ev.observed,confidence:round(item.ev.confidence,3)});
+      }
+    }
+  }
+  return {adjusted,hard,applied,hardReasons,scoreBefore};
 }
 function resolveConfusion(config,ranking,dims,features) {
   if(ranking.length<2)return{triggered:false,unresolved:false,winner:null}; const [a,b]=ranking, gap=Math.abs(a.score_after_modifiers-b.score_after_modifiers); if(gap>config.confusion_resolution.trigger.top_two_score_gap_max)return{triggered:false,unresolved:false,winner:null};
@@ -404,8 +529,10 @@ function runScoring(config,dims,quality,features) {
     .map(season => ({
       season_id: season,
       base_score: base[season],
+      score_before_exclusions: round(cross.adjusted[season], 1),
       score_after_modifiers: round(excl.adjusted[season], 1),
       hard_excluded: excl.hard[season],
+      hard_exclusion_reasons: excl.hardReasons[season],
       score_breakdown: baseDetails[season].breakdown,
       available_dimension_weight: baseDetails[season].available_weight,
       applied_rules: [...cross.applied[season], ...excl.applied[season]]
