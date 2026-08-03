@@ -1,0 +1,359 @@
+{
+  "exclusion_rules": {
+    "status": "implemented_v1",
+    "purpose": "Apply strong contradictions and hard incompatibilities after the four base engines have produced temperature, value, chroma, and contrast classifications.",
+    "principles": {
+      "do_not_exclude_from_single_weak_feature": true,
+      "hard_exclusion_requires": [
+        "one very strong contradiction with confidence >= 0.75",
+        "or two independent strong contradictions with confidence >= 0.60"
+      ],
+      "soft_penalty_requires": [
+        "one moderate contradiction",
+        "or one strong contradiction with insufficient confidence for hard exclusion"
+      ],
+      "unknown_never_penalized": true,
+      "quality_gate_required": true
+    },
+    "penalty_scale": {
+      "minor": -4,
+      "moderate": -8,
+      "strong": -15,
+      "hard_exclusion": -30
+    },
+    "season_rules": {
+      "light_spring": {
+        "hard_exclusions": [
+          {
+            "condition": "value_engine.classification == deep",
+            "reason": "Deep overall value contradicts the defining lightness of Light Spring."
+          },
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool temperature contradicts Light Spring."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == muted",
+            "reason": "Strongly muted appearance conflicts with Light Spring clarity."
+          },
+          {
+            "condition": "contrast_engine.classification == high",
+            "reason": "High contrast conflicts with Light Spring's low-to-medium contrast."
+          }
+        ]
+      },
+      "true_spring": {
+        "hard_exclusions": [
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool appearance contradicts True Spring."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == muted",
+            "reason": "Muted appearance conflicts with True Spring clarity."
+          },
+          {
+            "condition": "value_engine.classification == deep",
+            "reason": "Deep value is atypical for True Spring."
+          }
+        ]
+      },
+      "bright_spring": {
+        "hard_exclusions": [
+          {
+            "condition": "chroma_engine.classification == muted",
+            "reason": "Muted chroma contradicts Bright Spring."
+          },
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool temperature contradicts Bright Spring."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "contrast_engine.classification == low",
+            "reason": "Low contrast conflicts with Bright Spring."
+          },
+          {
+            "condition": "value_engine.classification == deep",
+            "reason": "Deep value weakens Bright Spring."
+          }
+        ]
+      },
+      "light_summer": {
+        "hard_exclusions": [
+          {
+            "condition": "value_engine.classification == deep",
+            "reason": "Deep overall value contradicts Light Summer."
+          },
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm appearance contradicts Light Summer."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == bright",
+            "reason": "Very bright chroma conflicts with Light Summer softness."
+          },
+          {
+            "condition": "contrast_engine.classification == high",
+            "reason": "High contrast conflicts with Light Summer."
+          }
+        ]
+      },
+      "true_summer": {
+        "hard_exclusions": [
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm appearance contradicts True Summer."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == bright",
+            "reason": "Bright chroma conflicts with True Summer softness."
+          },
+          {
+            "condition": "contrast_engine.classification == high",
+            "reason": "High contrast is atypical for True Summer."
+          }
+        ]
+      },
+      "soft_summer": {
+        "hard_exclusions": [
+          {
+            "condition": "chroma_engine.classification == bright",
+            "reason": "Bright chroma contradicts Soft Summer."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm direction conflicts with Soft Summer."
+          },
+          {
+            "condition": "contrast_engine.classification == high",
+            "reason": "High contrast conflicts with Soft Summer."
+          },
+          {
+            "condition": "value_engine.classification == deep",
+            "reason": "Deep value weakens Soft Summer."
+          }
+        ]
+      },
+      "soft_autumn": {
+        "hard_exclusions": [
+          {
+            "condition": "chroma_engine.classification == bright",
+            "reason": "Bright chroma contradicts Soft Autumn."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool direction conflicts with Soft Autumn."
+          },
+          {
+            "condition": "contrast_engine.classification == high",
+            "reason": "High contrast conflicts with Soft Autumn."
+          }
+        ]
+      },
+      "true_autumn": {
+        "hard_exclusions": [
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool appearance contradicts True Autumn."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == bright",
+            "reason": "Very bright chroma is atypical for True Autumn."
+          },
+          {
+            "condition": "value_engine.classification == light",
+            "reason": "Light value weakens True Autumn."
+          }
+        ]
+      },
+      "deep_autumn": {
+        "hard_exclusions": [
+          {
+            "condition": "value_engine.classification == light",
+            "reason": "Light value contradicts Deep Autumn."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "temperature_engine.classification == cool",
+            "reason": "Clearly cool direction conflicts with Deep Autumn."
+          },
+          {
+            "condition": "contrast_engine.classification == low",
+            "reason": "Low contrast is atypical for Deep Autumn."
+          }
+        ]
+      },
+      "bright_winter": {
+        "hard_exclusions": [
+          {
+            "condition": "chroma_engine.classification == muted",
+            "reason": "Muted chroma contradicts Bright Winter."
+          },
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm appearance contradicts Bright Winter."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "contrast_engine.classification == low",
+            "reason": "Low contrast conflicts with Bright Winter."
+          }
+        ]
+      },
+      "true_winter": {
+        "hard_exclusions": [
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm appearance contradicts True Winter."
+          },
+          {
+            "condition": "contrast_engine.classification == low",
+            "reason": "Low contrast contradicts True Winter."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "chroma_engine.classification == muted",
+            "reason": "Muted appearance conflicts with True Winter."
+          }
+        ]
+      },
+      "deep_winter": {
+        "hard_exclusions": [
+          {
+            "condition": "value_engine.classification == light",
+            "reason": "Light value contradicts Deep Winter."
+          }
+        ],
+        "strong_penalties": [
+          {
+            "condition": "temperature_engine.classification == warm",
+            "reason": "Clearly warm direction conflicts with Deep Winter."
+          },
+          {
+            "condition": "contrast_engine.classification == low",
+            "reason": "Low contrast conflicts with Deep Winter."
+          }
+        ]
+      }
+    },
+    "cross_dimension_rules": [
+      {
+        "id": "light_and_high_contrast",
+        "when": {
+          "value": "light",
+          "contrast": "high"
+        },
+        "effects": {
+          "boost": [
+            "bright_spring",
+            "bright_winter"
+          ],
+          "penalize": [
+            "light_spring",
+            "light_summer"
+          ]
+        },
+        "reason": "Light appearance with high contrast usually points away from the Light seasons."
+      },
+      {
+        "id": "deep_and_low_contrast",
+        "when": {
+          "value": "deep",
+          "contrast": "low"
+        },
+        "effects": {
+          "boost": [
+            "soft_autumn",
+            "soft_summer"
+          ],
+          "penalize": [
+            "deep_autumn",
+            "deep_winter",
+            "true_winter"
+          ]
+        },
+        "reason": "Deep coloring without strong contrast weakens Deep and Winter outcomes."
+      },
+      {
+        "id": "neutral_and_muted",
+        "when": {
+          "temperature": [
+            "neutral_warm",
+            "neutral_cool",
+            "neutral"
+          ],
+          "chroma": "muted"
+        },
+        "effects": {
+          "boost": [
+            "soft_summer",
+            "soft_autumn"
+          ],
+          "penalize": [
+            "bright_spring",
+            "bright_winter"
+          ]
+        },
+        "reason": "Neutral temperature plus muted chroma strongly supports Soft seasons."
+      },
+      {
+        "id": "clear_and_high_contrast",
+        "when": {
+          "chroma": [
+            "clear",
+            "bright"
+          ],
+          "contrast": "high"
+        },
+        "effects": {
+          "boost": [
+            "bright_spring",
+            "bright_winter",
+            "true_winter"
+          ],
+          "penalize": [
+            "soft_summer",
+            "soft_autumn"
+          ]
+        },
+        "reason": "Clear high-contrast appearance supports Bright or Winter families."
+      }
+    ],
+    "application_order": [
+      "base_dimension_scoring",
+      "season_profile_matching",
+      "cross_dimension_rules",
+      "season_specific_penalties",
+      "hard_exclusions",
+      "confusion_resolution",
+      "final_ranking"
+    ],
+    "output_schema": {
+      "season_id": "string",
+      "applied_penalties": "array[object]",
+      "hard_excluded": "boolean",
+      "hard_exclusion_reasons": "array[string]",
+      "score_before_exclusions": "number",
+      "score_after_exclusions": "number"
+    }
+  }
+}

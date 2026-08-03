@@ -1,0 +1,467 @@
+{
+  "temperature_engine": {
+    "status": "implemented_v1",
+    "purpose": "Estimate warm/cool direction from observable facial features before season scoring. The module does not assign a season by itself.",
+    "output": {
+      "warm_score": "0..100",
+      "cool_score": "0..100",
+      "neutral_score": "0..100",
+      "classification": "warm|neutral_warm|neutral|neutral_cool|cool|uncertain",
+      "confidence": "0..1",
+      "evidence": "array[object]",
+      "conflicts": "array[string]"
+    },
+    "evidence_priority": [
+      {
+        "source": "skin",
+        "weight": 0.5,
+        "reason": "Primary evidence when lighting and white balance are acceptable."
+      },
+      {
+        "source": "lips",
+        "weight": 0.15,
+        "reason": "Useful secondary evidence when natural lip color is visible."
+      },
+      {
+        "source": "eyes",
+        "weight": 0.15,
+        "reason": "Useful as supporting evidence, not decisive by itself."
+      },
+      {
+        "source": "hair",
+        "weight": 0.15,
+        "reason": "Use only when hair appears natural or likely natural."
+      },
+      {
+        "source": "eyebrows",
+        "weight": 0.05,
+        "reason": "Low-weight supporting evidence."
+      }
+    ],
+    "global_rules": {
+      "minimum_total_evidence_weight": 0.35,
+      "minimum_skin_confidence_for_primary_use": 0.55,
+      "ignore_hair_when": [
+        "hair_colored",
+        "possibly_colored_with_low_confidence",
+        "strong_artificial_highlights",
+        "hair_not_visible"
+      ],
+      "reduce_skin_weight_when": [
+        "white_balance_uncertain",
+        "strong_color_cast",
+        "heavy_makeup",
+        "overexposed_skin",
+        "underexposed_skin"
+      ],
+      "never_use_as_single_decisive_evidence": [
+        "eye_color_name",
+        "hair_color_name",
+        "surface_redness",
+        "golden_flecks",
+        "freckles"
+      ],
+      "unknown_handling": "Ignore unknown fields and renormalize available source weights.",
+      "conflict_handling": "If warm and cool evidence differ by less than 10 points, classify as neutral or uncertain depending on total confidence."
+    },
+    "skin_rules": {
+      "temperature": {
+        "warm": {
+          "warm": 1.0,
+          "cool": 0.0
+        },
+        "neutral_warm": {
+          "warm": 0.75,
+          "cool": 0.15
+        },
+        "neutral": {
+          "warm": 0.35,
+          "cool": 0.35
+        },
+        "neutral_cool": {
+          "warm": 0.15,
+          "cool": 0.75
+        },
+        "cool": {
+          "warm": 0.0,
+          "cool": 1.0
+        },
+        "uncertain": null
+      },
+      "undertone_family": {
+        "golden": {
+          "warm": 0.9,
+          "cool": 0.05
+        },
+        "yellow": {
+          "warm": 0.8,
+          "cool": 0.1
+        },
+        "peach": {
+          "warm": 0.75,
+          "cool": 0.15
+        },
+        "olive": {
+          "warm": 0.45,
+          "cool": 0.25,
+          "neutral": 0.3
+        },
+        "pink": {
+          "warm": 0.15,
+          "cool": 0.7
+        },
+        "rosy": {
+          "warm": 0.2,
+          "cool": 0.65
+        },
+        "blue_red": {
+          "warm": 0.05,
+          "cool": 0.9
+        },
+        "beige_neutral": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "uncertain": null
+      },
+      "natural_blush": {
+        "peach": {
+          "warm": 0.7,
+          "cool": 0.1
+        },
+        "coral": {
+          "warm": 0.75,
+          "cool": 0.1
+        },
+        "pink": {
+          "warm": 0.2,
+          "cool": 0.6
+        },
+        "rose": {
+          "warm": 0.2,
+          "cool": 0.65
+        },
+        "red": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "not_visible": null,
+        "unknown": null
+      },
+      "freckles": {
+        "golden_brown": {
+          "warm": 0.55,
+          "cool": 0.1
+        },
+        "cool_brown": {
+          "warm": 0.15,
+          "cool": 0.5
+        },
+        "mixed": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "none": null,
+        "unknown": null
+      },
+      "internal_weights": {
+        "temperature": 0.55,
+        "undertone_family": 0.3,
+        "natural_blush": 0.1,
+        "freckles": 0.05
+      },
+      "penalties": {
+        "surface_redness_as_cool_proof": -1.0,
+        "tan_as_warm_proof": -1.0,
+        "makeup_tone_as_natural_undertone": -1.0
+      }
+    },
+    "lips_rules": {
+      "temperature": {
+        "warm": {
+          "warm": 1.0,
+          "cool": 0.0
+        },
+        "neutral_warm": {
+          "warm": 0.75,
+          "cool": 0.15
+        },
+        "neutral": {
+          "warm": 0.35,
+          "cool": 0.35
+        },
+        "neutral_cool": {
+          "warm": 0.15,
+          "cool": 0.75
+        },
+        "cool": {
+          "warm": 0.0,
+          "cool": 1.0
+        },
+        "uncertain": null
+      },
+      "natural_color": {
+        "peach": {
+          "warm": 0.75,
+          "cool": 0.1
+        },
+        "coral": {
+          "warm": 0.8,
+          "cool": 0.05
+        },
+        "pink": {
+          "warm": 0.25,
+          "cool": 0.55
+        },
+        "rose": {
+          "warm": 0.2,
+          "cool": 0.65
+        },
+        "mauve": {
+          "warm": 0.1,
+          "cool": 0.8
+        },
+        "berry": {
+          "warm": 0.15,
+          "cool": 0.75
+        },
+        "brown_rose": {
+          "warm": 0.45,
+          "cool": 0.35
+        },
+        "neutral": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "unknown": null
+      },
+      "internal_weights": {
+        "temperature": 0.7,
+        "natural_color": 0.3
+      }
+    },
+    "eyes_rules": {
+      "temperature": {
+        "warm": {
+          "warm": 1.0,
+          "cool": 0.0
+        },
+        "neutral_warm": {
+          "warm": 0.75,
+          "cool": 0.15
+        },
+        "neutral": {
+          "warm": 0.35,
+          "cool": 0.35
+        },
+        "neutral_cool": {
+          "warm": 0.15,
+          "cool": 0.75
+        },
+        "cool": {
+          "warm": 0.0,
+          "cool": 1.0
+        },
+        "uncertain": null
+      },
+      "supporting_markers": {
+        "golden_flecks_visible": {
+          "warm": 0.35,
+          "cool": 0.05
+        },
+        "golden_flecks_dominant": {
+          "warm": 0.5,
+          "cool": 0.05
+        },
+        "cool_gray_veil_visible": {
+          "warm": 0.05,
+          "cool": 0.4
+        },
+        "cool_gray_veil_dominant": {
+          "warm": 0.05,
+          "cool": 0.55
+        }
+      },
+      "base_color_note": "Base eye color must not determine temperature alone. Blue eyes can be warm-neutral; brown eyes can be cool-neutral.",
+      "internal_weights": {
+        "temperature": 0.75,
+        "golden_flecks": 0.125,
+        "cool_gray_veil": 0.125
+      }
+    },
+    "hair_rules": {
+      "temperature": {
+        "warm": {
+          "warm": 1.0,
+          "cool": 0.0
+        },
+        "neutral_warm": {
+          "warm": 0.75,
+          "cool": 0.15
+        },
+        "neutral": {
+          "warm": 0.35,
+          "cool": 0.35
+        },
+        "neutral_cool": {
+          "warm": 0.15,
+          "cool": 0.75
+        },
+        "cool": {
+          "warm": 0.0,
+          "cool": 1.0
+        },
+        "uncertain": null
+      },
+      "undertone": {
+        "golden": {
+          "warm": 0.8,
+          "cool": 0.05
+        },
+        "honey": {
+          "warm": 0.8,
+          "cool": 0.05
+        },
+        "copper": {
+          "warm": 0.9,
+          "cool": 0.0
+        },
+        "red": {
+          "warm": 0.75,
+          "cool": 0.1
+        },
+        "chestnut": {
+          "warm": 0.65,
+          "cool": 0.15
+        },
+        "ash": {
+          "warm": 0.05,
+          "cool": 0.85
+        },
+        "smoky": {
+          "warm": 0.1,
+          "cool": 0.7
+        },
+        "blue_black": {
+          "warm": 0.0,
+          "cool": 0.9
+        },
+        "neutral": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "uncertain": null
+      },
+      "natural_highlights": {
+        "golden": {
+          "warm": 0.65,
+          "cool": 0.05
+        },
+        "copper": {
+          "warm": 0.8,
+          "cool": 0.0
+        },
+        "red": {
+          "warm": 0.7,
+          "cool": 0.1
+        },
+        "ash": {
+          "warm": 0.05,
+          "cool": 0.75
+        },
+        "neutral": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "not_visible": null,
+        "unknown": null
+      },
+      "internal_weights": {
+        "temperature": 0.55,
+        "undertone": 0.3,
+        "natural_highlights": 0.15
+      }
+    },
+    "eyebrows_rules": {
+      "temperature": {
+        "warm": {
+          "warm": 0.7,
+          "cool": 0.1
+        },
+        "cool": {
+          "warm": 0.1,
+          "cool": 0.7
+        },
+        "neutral": {
+          "warm": 0.3,
+          "cool": 0.3,
+          "neutral": 0.4
+        },
+        "uncertain": null
+      }
+    },
+    "classification_thresholds": {
+      "warm": {
+        "minimum_warm_score": 65,
+        "minimum_gap_over_cool": 20
+      },
+      "neutral_warm": {
+        "minimum_warm_score": 52,
+        "minimum_gap_over_cool": 8
+      },
+      "neutral": {
+        "maximum_gap_between_warm_and_cool": 7,
+        "minimum_total_confidence": 0.5
+      },
+      "neutral_cool": {
+        "minimum_cool_score": 52,
+        "minimum_gap_over_warm": 8
+      },
+      "cool": {
+        "minimum_cool_score": 65,
+        "minimum_gap_over_warm": 20
+      },
+      "uncertain": {
+        "when": [
+          "total_evidence_weight_below_minimum",
+          "total_confidence_below_0.40",
+          "strong_feature_conflicts",
+          "quality_analysis_continue_analysis_false"
+        ]
+      }
+    },
+    "confidence_rules": {
+      "base": "weighted_mean_of_used_feature_confidences",
+      "quality_multipliers": {
+        "good": 1.0,
+        "acceptable": 0.8,
+        "poor": 0.0
+      },
+      "conflict_penalty": {
+        "none": 0.0,
+        "moderate": 0.1,
+        "strong": 0.25
+      },
+      "hair_colored_penalty": 0.05,
+      "heavy_makeup_penalty": 0.1,
+      "white_balance_uncertain_penalty": 0.15
+    },
+    "evidence_log_schema": {
+      "source": "skin|lips|eyes|hair|eyebrows",
+      "field": "string",
+      "observed_value": "string",
+      "warm_contribution": "number",
+      "cool_contribution": "number",
+      "neutral_contribution": "number",
+      "weight_used": "number",
+      "feature_confidence": "0..1",
+      "note": "string"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "season_selection": {
+    "status": "implemented_v1",
+    "selection_order": [
+      "remove_hard_excluded_seasons",
+      "sort_by_score_after_exclusions",
+      "run_confusion_resolution_if_triggered",
+      "select_best_match",
+      "select_second_match",
+      "select_third_match"
+    ],
+    "winner_rules": {
+      "clear_winner": {
+        "minimum_score": 60,
+        "minimum_gap_to_second": 8
+      },
+      "probable_winner": {
+        "minimum_score": 50,
+        "minimum_gap_to_second": 4
+      },
+      "close_result": {
+        "maximum_gap_to_second": 3,
+        "action": "return_best_and_second_with_reduced_confidence"
+      },
+      "insufficient_result": {
+        "when": [
+          "best_score_below_40",
+          "all_candidates_hard_excluded",
+          "overall_engine_confidence_below_0.40"
+        ],
+        "action": "return_no_final_season_and_request_better_photo"
+      }
+    }
+  }
+}

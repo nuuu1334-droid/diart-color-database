@@ -1,0 +1,30 @@
+{
+  "quality_analysis": {
+    "required_checks": [
+      "face_visibility",
+      "lighting_evenness",
+      "white_balance",
+      "image_sharpness",
+      "skin_visibility",
+      "eye_visibility",
+      "hair_visibility",
+      "color_cast",
+      "filters_or_beauty_processing"
+    ],
+    "quality_fields": {
+      "overall_quality": "good|acceptable|poor",
+      "continue_analysis": "boolean",
+      "problems": "array[string]",
+      "limitations": "array[string]"
+    },
+    "hard_stop_conditions": [
+      "face_not_detected",
+      "multiple_faces_without_clear_primary_subject",
+      "extreme_color_filter",
+      "severe_underexposure",
+      "severe_overexposure",
+      "skin_not_visible",
+      "image_too_blurred"
+    ]
+  }
+}

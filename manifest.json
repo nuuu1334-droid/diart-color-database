@@ -1,0 +1,24 @@
+{
+  "project": "DiArt",
+  "package": "Color Engine modular configuration",
+  "version": "2.1",
+  "entrypoint": "engine.json",
+  "modules": {
+    "quality": "quality.json",
+    "feature_extraction": "feature_extraction.json",
+    "temperature": "temperature.json",
+    "value": "value.json",
+    "chroma": "chroma.json",
+    "contrast": "contrast.json",
+    "season_scoring": "season_scoring.json",
+    "confusion_resolution": "confusion_resolution.json",
+    "season_selection": "season_selection.json",
+    "confidence": "confidence.json",
+    "exclusions": "exclusions.json"
+  },
+  "integrity": {
+    "source_top_level_key_count": 25,
+    "assigned_top_level_key_count": 25,
+    "unassigned_top_level_keys": []
+  }
+}

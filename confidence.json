@@ -1,0 +1,53 @@
+{
+  "confidence": {
+    "status": "not_implemented"
+  },
+  "confidence_engine": {
+    "status": "implemented_spec_v1",
+    "formula": {
+      "dimension_confidence_component": 0.55,
+      "score_gap_component": 0.25,
+      "quality_component": 0.2
+    },
+    "dimension_confidence": "Weighted mean of temperature, value, chroma and contrast engine confidences.",
+    "score_gap_normalization": {
+      "0_points": 0.2,
+      "3_points": 0.4,
+      "5_points": 0.55,
+      "8_points": 0.75,
+      "12_or_more_points": 1.0
+    },
+    "quality_values": {
+      "good": 1.0,
+      "acceptable": 0.75,
+      "poor": 0.0
+    },
+    "penalties": {
+      "close_result": -0.1,
+      "confusion_unresolved": -0.12,
+      "one_dimension_unknown": -0.05,
+      "two_dimensions_unknown": -0.15,
+      "heavy_makeup": -0.08,
+      "colored_hair": -0.05,
+      "white_balance_uncertain": -0.1
+    },
+    "levels": {
+      "high": {
+        "minimum": 0.8
+      },
+      "medium": {
+        "minimum": 0.6
+      },
+      "low": {
+        "minimum": 0.4
+      },
+      "insufficient": {
+        "maximum": 0.39
+      }
+    },
+    "bounds": {
+      "minimum": 0.0,
+      "maximum": 1.0
+    }
+  }
+}

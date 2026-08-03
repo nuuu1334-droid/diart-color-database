@@ -1,0 +1,335 @@
+{
+  "confusion_resolution": {
+    "status": "implemented_v1",
+    "purpose": "Resolve close results between commonly confused neighboring seasons after base scoring and exclusion rules have been applied.",
+    "trigger": {
+      "top_two_score_gap_max": 8,
+      "top_two_confidence_min": 0.45,
+      "skip_when": [
+        "quality_analysis_continue_analysis_false",
+        "both_candidates_hard_excluded",
+        "one_candidate_score_below_35"
+      ]
+    },
+    "decision_scale": {
+      "major_evidence": 3,
+      "moderate_evidence": 2,
+      "minor_evidence": 1,
+      "contradiction": -2
+    },
+    "rules": {
+      "light_spring_vs_light_summer": {
+        "candidate_a": "light_spring",
+        "candidate_b": "light_summer",
+        "primary_axis": "temperature",
+        "secondary_axes": [
+          "chroma",
+          "feature_blending"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "temperature in [warm, neutral_warm]",
+            "points": 3,
+            "reason": "Light Spring requires a warm or neutral-warm direction."
+          },
+          {
+            "condition": "skin.undertone_family in [golden, yellow, peach]",
+            "points": 2,
+            "reason": "Golden or peach undertone supports Light Spring."
+          },
+          {
+            "condition": "chroma in [clear, balanced]",
+            "points": 2,
+            "reason": "Light Spring is fresher and clearer."
+          },
+          {
+            "condition": "eyes.golden_flecks in [visible, dominant]",
+            "points": 1,
+            "reason": "Warm eye details support Light Spring."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "temperature in [cool, neutral_cool]",
+            "points": 3,
+            "reason": "Light Summer requires a cool or neutral-cool direction."
+          },
+          {
+            "condition": "skin.undertone_family in [pink, rosy, beige_neutral]",
+            "points": 2,
+            "reason": "Cool pink or neutral-cool skin supports Light Summer."
+          },
+          {
+            "condition": "chroma in [soft, balanced]",
+            "points": 2,
+            "reason": "Light Summer is softer and more blended."
+          },
+          {
+            "condition": "eyes.cool_gray_veil in [visible, dominant]",
+            "points": 1,
+            "reason": "Cool gray veil supports Light Summer."
+          }
+        ],
+        "tie_breaker": "temperature_engine_confidence"
+      },
+      "true_spring_vs_bright_spring": {
+        "candidate_a": "true_spring",
+        "candidate_b": "bright_spring",
+        "primary_axis": "chroma",
+        "secondary_axes": [
+          "contrast",
+          "temperature"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "temperature == warm",
+            "points": 3,
+            "reason": "True Spring is more purely warm."
+          },
+          {
+            "condition": "chroma == clear",
+            "points": 2,
+            "reason": "True Spring is clear but not necessarily extreme."
+          },
+          {
+            "condition": "contrast == medium",
+            "points": 2,
+            "reason": "True Spring usually has medium contrast."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "chroma == bright",
+            "points": 3,
+            "reason": "Bright Spring is defined by brightness."
+          },
+          {
+            "condition": "contrast == high",
+            "points": 2,
+            "reason": "Higher contrast supports Bright Spring."
+          },
+          {
+            "condition": "temperature == neutral_warm",
+            "points": 1,
+            "reason": "Bright Spring may lean less purely warm than True Spring."
+          },
+          {
+            "condition": "feature_definition in [defined, striking]",
+            "points": 2,
+            "reason": "Sharp feature definition supports Bright Spring."
+          }
+        ],
+        "tie_breaker": "chroma_engine_confidence"
+      },
+      "soft_summer_vs_soft_autumn": {
+        "candidate_a": "soft_summer",
+        "candidate_b": "soft_autumn",
+        "primary_axis": "temperature",
+        "secondary_axes": [
+          "undertone",
+          "hair_temperature"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "temperature in [cool, neutral_cool]",
+            "points": 3,
+            "reason": "Soft Summer is the cool-neutral Soft season."
+          },
+          {
+            "condition": "hair.undertone in [ash, smoky]",
+            "points": 2,
+            "reason": "Ash or smoky hair supports Soft Summer."
+          },
+          {
+            "condition": "skin.undertone_family in [pink, rosy, beige_neutral]",
+            "points": 2,
+            "reason": "Cool or neutral-cool skin supports Soft Summer."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "temperature in [warm, neutral_warm]",
+            "points": 3,
+            "reason": "Soft Autumn is the warm-neutral Soft season."
+          },
+          {
+            "condition": "hair.undertone in [golden, honey, chestnut]",
+            "points": 2,
+            "reason": "Warm muted hair supports Soft Autumn."
+          },
+          {
+            "condition": "skin.undertone_family in [golden, yellow, peach, olive]",
+            "points": 2,
+            "reason": "Warm or olive skin supports Soft Autumn."
+          }
+        ],
+        "tie_breaker": "temperature_engine_confidence"
+      },
+      "true_summer_vs_true_winter": {
+        "candidate_a": "true_summer",
+        "candidate_b": "true_winter",
+        "primary_axis": "contrast",
+        "secondary_axes": [
+          "chroma",
+          "value"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "contrast in [low, medium]",
+            "points": 3,
+            "reason": "True Summer is softer and less contrasted."
+          },
+          {
+            "condition": "chroma in [soft, muted]",
+            "points": 3,
+            "reason": "Softness strongly supports True Summer."
+          },
+          {
+            "condition": "feature_definition in [soft, moderate]",
+            "points": 2,
+            "reason": "Blended feature definition supports True Summer."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "contrast == high",
+            "points": 3,
+            "reason": "True Winter requires strong contrast."
+          },
+          {
+            "condition": "chroma in [clear, bright]",
+            "points": 3,
+            "reason": "Clear chroma supports True Winter."
+          },
+          {
+            "condition": "feature_definition in [defined, striking]",
+            "points": 2,
+            "reason": "Sharp definition supports True Winter."
+          },
+          {
+            "condition": "value == deep",
+            "points": 1,
+            "reason": "Depth supports True Winter over True Summer."
+          }
+        ],
+        "tie_breaker": "contrast_engine_confidence"
+      },
+      "bright_spring_vs_bright_winter": {
+        "candidate_a": "bright_spring",
+        "candidate_b": "bright_winter",
+        "primary_axis": "temperature",
+        "secondary_axes": [
+          "skin_undertone",
+          "hair_undertone"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "temperature in [warm, neutral_warm]",
+            "points": 3,
+            "reason": "Bright Spring is the warm Bright season."
+          },
+          {
+            "condition": "skin.undertone_family in [golden, yellow, peach]",
+            "points": 2,
+            "reason": "Warm skin supports Bright Spring."
+          },
+          {
+            "condition": "hair.undertone in [golden, honey, copper, chestnut]",
+            "points": 2,
+            "reason": "Warm hair supports Bright Spring."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "temperature in [cool, neutral_cool]",
+            "points": 3,
+            "reason": "Bright Winter is the cool Bright season."
+          },
+          {
+            "condition": "skin.undertone_family in [pink, rosy, blue_red]",
+            "points": 2,
+            "reason": "Cool skin supports Bright Winter."
+          },
+          {
+            "condition": "hair.undertone in [ash, smoky, blue_black]",
+            "points": 2,
+            "reason": "Cool hair supports Bright Winter."
+          }
+        ],
+        "tie_breaker": "temperature_engine_confidence"
+      },
+      "deep_autumn_vs_deep_winter": {
+        "candidate_a": "deep_autumn",
+        "candidate_b": "deep_winter",
+        "primary_axis": "temperature",
+        "secondary_axes": [
+          "hair_undertone",
+          "skin_undertone",
+          "chroma"
+        ],
+        "evidence_for_a": [
+          {
+            "condition": "temperature in [warm, neutral_warm]",
+            "points": 3,
+            "reason": "Deep Autumn is the warm Deep season."
+          },
+          {
+            "condition": "hair.undertone in [chestnut, copper, red, golden]",
+            "points": 2,
+            "reason": "Warm depth supports Deep Autumn."
+          },
+          {
+            "condition": "skin.undertone_family in [golden, yellow, peach, olive]",
+            "points": 2,
+            "reason": "Warm or olive skin supports Deep Autumn."
+          },
+          {
+            "condition": "chroma in [balanced, muted]",
+            "points": 1,
+            "reason": "Slightly softened depth supports Deep Autumn."
+          }
+        ],
+        "evidence_for_b": [
+          {
+            "condition": "temperature in [cool, neutral_cool]",
+            "points": 3,
+            "reason": "Deep Winter is the cool Deep season."
+          },
+          {
+            "condition": "hair.undertone in [ash, smoky, blue_black]",
+            "points": 2,
+            "reason": "Cool depth supports Deep Winter."
+          },
+          {
+            "condition": "skin.undertone_family in [pink, rosy, blue_red, beige_neutral]",
+            "points": 2,
+            "reason": "Cool or neutral-cool skin supports Deep Winter."
+          },
+          {
+            "condition": "chroma in [balanced, clear]",
+            "points": 1,
+            "reason": "Cleaner depth supports Deep Winter."
+          }
+        ],
+        "tie_breaker": "temperature_engine_confidence"
+      }
+    },
+    "generic_neighbor_rule": {
+      "when_no_specific_pair_rule": true,
+      "method": "Compare candidates across temperature, value, chroma, and contrast. Use the dimension with the largest profile difference as the primary tie-breaker.",
+      "minimum_decision_margin": 2
+    },
+    "result_schema": {
+      "candidate_a": "string",
+      "candidate_b": "string",
+      "candidate_a_points": "number",
+      "candidate_b_points": "number",
+      "winner": "string|null",
+      "decision_margin": "number",
+      "confidence": "0..1",
+      "applied_evidence": "array[object]",
+      "unresolved": "boolean",
+      "reason": "string"
+    }
+  }
+}

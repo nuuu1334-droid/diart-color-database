@@ -1,0 +1,603 @@
+{
+  "season_scoring": {
+    "status": "implemented_base_dimensions",
+    "score_range": {
+      "minimum": 0,
+      "maximum": 100
+    },
+    "normalization": {
+      "method": "weighted_sum_then_scale_to_100",
+      "unknown_feature_handling": "ignore_rule_and_renormalize_available_weights",
+      "contradiction_handling": "subtract_penalty_without_dropping_below_zero"
+    },
+    "dimensions": {
+      "temperature": {
+        "weight": 0.3,
+        "values": [
+          "warm",
+          "neutral_warm",
+          "neutral",
+          "neutral_cool",
+          "cool",
+          "uncertain"
+        ]
+      },
+      "value": {
+        "weight": 0.25,
+        "values": [
+          "light",
+          "medium",
+          "deep",
+          "uncertain"
+        ]
+      },
+      "chroma": {
+        "weight": 0.25,
+        "values": [
+          "bright",
+          "clear",
+          "balanced",
+          "soft",
+          "muted",
+          "uncertain"
+        ]
+      },
+      "contrast": {
+        "weight": 0.2,
+        "values": [
+          "low",
+          "medium",
+          "high",
+          "uncertain"
+        ]
+      }
+    },
+    "season_profiles": {
+      "light_spring": {
+        "temperature": {
+          "target": "neutral_warm",
+          "accepted": [
+            "warm",
+            "neutral_warm"
+          ]
+        },
+        "value": {
+          "target": "light",
+          "accepted": [
+            "light"
+          ]
+        },
+        "chroma": {
+          "target": "clear",
+          "accepted": [
+            "clear",
+            "balanced"
+          ]
+        },
+        "contrast": {
+          "target": "low",
+          "accepted": [
+            "low",
+            "medium"
+          ]
+        }
+      },
+      "true_spring": {
+        "temperature": {
+          "target": "warm",
+          "accepted": [
+            "warm"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "light",
+            "medium"
+          ]
+        },
+        "chroma": {
+          "target": "clear",
+          "accepted": [
+            "clear",
+            "bright"
+          ]
+        },
+        "contrast": {
+          "target": "medium",
+          "accepted": [
+            "medium"
+          ]
+        }
+      },
+      "bright_spring": {
+        "temperature": {
+          "target": "neutral_warm",
+          "accepted": [
+            "warm",
+            "neutral_warm"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "light",
+            "medium"
+          ]
+        },
+        "chroma": {
+          "target": "bright",
+          "accepted": [
+            "bright",
+            "clear"
+          ]
+        },
+        "contrast": {
+          "target": "high",
+          "accepted": [
+            "medium",
+            "high"
+          ]
+        }
+      },
+      "light_summer": {
+        "temperature": {
+          "target": "neutral_cool",
+          "accepted": [
+            "neutral_cool",
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "light",
+          "accepted": [
+            "light"
+          ]
+        },
+        "chroma": {
+          "target": "soft",
+          "accepted": [
+            "soft",
+            "balanced"
+          ]
+        },
+        "contrast": {
+          "target": "low",
+          "accepted": [
+            "low",
+            "medium"
+          ]
+        }
+      },
+      "true_summer": {
+        "temperature": {
+          "target": "cool",
+          "accepted": [
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "light",
+            "medium"
+          ]
+        },
+        "chroma": {
+          "target": "soft",
+          "accepted": [
+            "soft",
+            "muted"
+          ]
+        },
+        "contrast": {
+          "target": "medium",
+          "accepted": [
+            "low",
+            "medium"
+          ]
+        }
+      },
+      "soft_summer": {
+        "temperature": {
+          "target": "neutral_cool",
+          "accepted": [
+            "neutral_cool",
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "medium"
+          ]
+        },
+        "chroma": {
+          "target": "muted",
+          "accepted": [
+            "soft",
+            "muted"
+          ]
+        },
+        "contrast": {
+          "target": "low",
+          "accepted": [
+            "low",
+            "medium"
+          ]
+        }
+      },
+      "soft_autumn": {
+        "temperature": {
+          "target": "neutral_warm",
+          "accepted": [
+            "neutral_warm",
+            "warm"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "medium"
+          ]
+        },
+        "chroma": {
+          "target": "muted",
+          "accepted": [
+            "soft",
+            "muted"
+          ]
+        },
+        "contrast": {
+          "target": "low",
+          "accepted": [
+            "low",
+            "medium"
+          ]
+        }
+      },
+      "true_autumn": {
+        "temperature": {
+          "target": "warm",
+          "accepted": [
+            "warm"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "medium",
+            "deep"
+          ]
+        },
+        "chroma": {
+          "target": "balanced",
+          "accepted": [
+            "balanced",
+            "muted"
+          ]
+        },
+        "contrast": {
+          "target": "medium",
+          "accepted": [
+            "medium"
+          ]
+        }
+      },
+      "deep_autumn": {
+        "temperature": {
+          "target": "neutral_warm",
+          "accepted": [
+            "warm",
+            "neutral_warm"
+          ]
+        },
+        "value": {
+          "target": "deep",
+          "accepted": [
+            "deep"
+          ]
+        },
+        "chroma": {
+          "target": "balanced",
+          "accepted": [
+            "balanced",
+            "muted"
+          ]
+        },
+        "contrast": {
+          "target": "high",
+          "accepted": [
+            "medium",
+            "high"
+          ]
+        }
+      },
+      "bright_winter": {
+        "temperature": {
+          "target": "neutral_cool",
+          "accepted": [
+            "neutral_cool",
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "medium",
+          "accepted": [
+            "medium",
+            "deep"
+          ]
+        },
+        "chroma": {
+          "target": "bright",
+          "accepted": [
+            "bright",
+            "clear"
+          ]
+        },
+        "contrast": {
+          "target": "high",
+          "accepted": [
+            "high"
+          ]
+        }
+      },
+      "true_winter": {
+        "temperature": {
+          "target": "cool",
+          "accepted": [
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "deep",
+          "accepted": [
+            "medium",
+            "deep"
+          ]
+        },
+        "chroma": {
+          "target": "clear",
+          "accepted": [
+            "clear",
+            "bright"
+          ]
+        },
+        "contrast": {
+          "target": "high",
+          "accepted": [
+            "high"
+          ]
+        }
+      },
+      "deep_winter": {
+        "temperature": {
+          "target": "neutral_cool",
+          "accepted": [
+            "neutral_cool",
+            "cool"
+          ]
+        },
+        "value": {
+          "target": "deep",
+          "accepted": [
+            "deep"
+          ]
+        },
+        "chroma": {
+          "target": "balanced",
+          "accepted": [
+            "balanced",
+            "clear"
+          ]
+        },
+        "contrast": {
+          "target": "high",
+          "accepted": [
+            "high"
+          ]
+        }
+      }
+    },
+    "match_points": {
+      "exact_target": 1.0,
+      "accepted_value": 0.75,
+      "adjacent_value": 0.4,
+      "opposite_value": 0.0,
+      "uncertain": null
+    },
+    "adjacency": {
+      "temperature": {
+        "warm": [
+          "neutral_warm"
+        ],
+        "neutral_warm": [
+          "warm",
+          "neutral"
+        ],
+        "neutral": [
+          "neutral_warm",
+          "neutral_cool"
+        ],
+        "neutral_cool": [
+          "neutral",
+          "cool"
+        ],
+        "cool": [
+          "neutral_cool"
+        ]
+      },
+      "value": {
+        "light": [
+          "medium"
+        ],
+        "medium": [
+          "light",
+          "deep"
+        ],
+        "deep": [
+          "medium"
+        ]
+      },
+      "chroma": {
+        "bright": [
+          "clear"
+        ],
+        "clear": [
+          "bright",
+          "balanced"
+        ],
+        "balanced": [
+          "clear",
+          "soft"
+        ],
+        "soft": [
+          "balanced",
+          "muted"
+        ],
+        "muted": [
+          "soft"
+        ]
+      },
+      "contrast": {
+        "low": [
+          "medium"
+        ],
+        "medium": [
+          "low",
+          "high"
+        ],
+        "high": [
+          "medium"
+        ]
+      }
+    },
+    "feature_sources": {
+      "temperature": [
+        "temperature_engine.output.classification",
+        "feature_extraction.overall_impression.dominant_temperature"
+      ],
+      "value": [
+        "value_engine.output.classification",
+        "feature_extraction.overall_impression.dominant_value"
+      ],
+      "chroma": [
+        "chroma_engine.output.classification",
+        "feature_extraction.overall_impression.dominant_chroma"
+      ],
+      "contrast": [
+        "contrast_engine.output.classification",
+        "feature_extraction.overall_impression.dominant_contrast"
+      ]
+    },
+    "dimension_confidence": {
+      "method": "weighted_average_of_available_feature_confidences",
+      "minimum_for_use": 0.4
+    },
+    "ranking_rules": {
+      "primary_sort": "normalized_score_desc",
+      "secondary_sort": "dimension_confidence_desc",
+      "minimum_gap_for_clear_winner": 8,
+      "close_result_threshold": 5,
+      "top_candidates": 3
+    },
+    "temperature_dependency": {
+      "primary_source": "temperature_engine.output.classification",
+      "fallback_source": "feature_extraction.overall_impression.dominant_temperature",
+      "minimum_temperature_engine_confidence": 0.45
+    },
+    "value_dependency": {
+      "primary_source": "value_engine.output.classification",
+      "fallback_source": "feature_extraction.overall_impression.dominant_value",
+      "minimum_value_engine_confidence": 0.45
+    },
+    "chroma_dependency": {
+      "primary_source": "chroma_engine.output.classification",
+      "fallback_source": "feature_extraction.overall_impression.dominant_chroma",
+      "minimum_chroma_engine_confidence": 0.45
+    },
+    "contrast_dependency": {
+      "primary_source": "contrast_engine.output.classification",
+      "fallback_source": "feature_extraction.overall_impression.dominant_contrast",
+      "minimum_contrast_engine_confidence": 0.45
+    },
+    "exclusion_dependency": {
+      "module": "exclusion_rules",
+      "apply_after": "base_dimension_scoring",
+      "apply_before": "confusion_resolution"
+    }
+  },
+  "scoring_algorithm": {
+    "status": "implemented_spec_v1",
+    "dimension_weights": {
+      "temperature": 0.3,
+      "value": 0.25,
+      "chroma": 0.25,
+      "contrast": 0.2
+    },
+    "dimension_match_values": {
+      "exact_target": 1.0,
+      "accepted_value": 0.75,
+      "adjacent_value": 0.4,
+      "opposite_value": 0.0
+    },
+    "dimension_score_formula": "dimension_points = dimension_weight * match_value * dimension_confidence",
+    "base_score_formula": "base_score = 100 * sum(available_dimension_points) / sum(available_dimension_weights * dimension_confidence)",
+    "unknown_dimension_rule": "Ignore unknown or low-confidence dimensions and renormalize the remaining available dimensions.",
+    "minimum_dimension_confidence": 0.4,
+    "minimum_available_dimension_weight": 0.45,
+    "rounding": {
+      "intermediate_precision": 4,
+      "final_score_precision": 1
+    },
+    "score_bounds": {
+      "minimum": 0,
+      "maximum": 100
+    }
+  },
+  "dimension_resolution": {
+    "temperature": {
+      "primary": "temperature_engine.output.classification",
+      "confidence": "temperature_engine.output.confidence",
+      "fallback": "feature_extraction.overall_impression.dominant_temperature"
+    },
+    "value": {
+      "primary": "value_engine.output.classification",
+      "confidence": "value_engine.output.confidence",
+      "fallback": "feature_extraction.overall_impression.dominant_value"
+    },
+    "chroma": {
+      "primary": "chroma_engine.output.classification",
+      "confidence": "chroma_engine.output.confidence",
+      "fallback": "feature_extraction.overall_impression.dominant_chroma"
+    },
+    "contrast": {
+      "primary": "contrast_engine.output.classification",
+      "confidence": "contrast_engine.output.confidence",
+      "fallback": "feature_extraction.overall_impression.dominant_contrast"
+    }
+  },
+  "score_modifiers": {
+    "status": "implemented_spec_v1",
+    "cross_dimension": {
+      "minor_boost": 3,
+      "moderate_boost": 6,
+      "strong_boost": 10,
+      "minor_penalty": -4,
+      "moderate_penalty": -8,
+      "strong_penalty": -15
+    },
+    "exclusions": {
+      "hard_exclusion_score": 0,
+      "hard_exclusion_flag": true,
+      "soft_penalty_application": "add penalty to base score and clamp to 0..100"
+    },
+    "confusion_resolution": {
+      "point_to_score_conversion": 1.5,
+      "maximum_score_adjustment": 9,
+      "winner_adjustment": "min(points_margin * 1.5, 9)",
+      "loser_adjustment": "negative winner adjustment",
+      "unresolved_when_margin_below": 2
+    }
+  }
+}

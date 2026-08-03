@@ -1,0 +1,316 @@
+{
+  "engine": {
+    "name": "DiArt Color Engine",
+    "version": "2.1",
+    "status": "development_bright_clear_and_value_calibrated",
+    "scope": "12-season personal color analysis from a single portrait photo",
+    "decision_principle": "GPT extracts observable appearance features; the engine scores and selects the season."
+  },
+  "input_schema": {
+    "image": {
+      "face_detected": "boolean",
+      "multiple_faces": "boolean",
+      "image_width_px": "integer",
+      "image_height_px": "integer",
+      "face_coverage": "low|medium|high",
+      "frontal_angle": "frontal|slight_turn|profile|unknown",
+      "glasses": "none|transparent|tinted|unknown",
+      "makeup": "none|light|visible|heavy|unknown",
+      "hair_colored": "yes|no|unknown",
+      "source_type": "camera|screenshot|social_media|unknown"
+    }
+  },
+  "strict_input_schema": {
+    "status": "implemented_v1",
+    "required_top_level": [
+      "image",
+      "quality",
+      "features"
+    ],
+    "image": {
+      "face_detected": "boolean",
+      "multiple_faces": "boolean",
+      "face_coverage": "low|medium|high",
+      "frontal_angle": "frontal|slight_turn|profile|unknown",
+      "glasses": "none|transparent|tinted|unknown",
+      "makeup": "none|light|visible|heavy|unknown",
+      "hair_colored": "yes|no|unknown",
+      "source_type": "camera|screenshot|social_media|unknown"
+    },
+    "quality": {
+      "overall_quality": "good|acceptable|poor",
+      "continue_analysis": "boolean",
+      "problems": "array[string]",
+      "limitations": "array[string]"
+    },
+    "features": {
+      "skin": "feature_extraction.skin",
+      "eyes": "feature_extraction.eyes",
+      "hair": "feature_extraction.hair",
+      "eyebrows": "feature_extraction.eyebrows",
+      "lips": "feature_extraction.lips",
+      "contrast": "feature_extraction.contrast",
+      "overall_impression": "feature_extraction.overall_impression"
+    },
+    "validation_rules": [
+      "Every feature section must include confidence.",
+      "Unknown is allowed where the photo does not support a reliable observation.",
+      "Do not replace unknown with a guess.",
+      "Hex values may be null.",
+      "Do not provide a final season in the input."
+    ]
+  },
+  "output_schema": {
+    "quality": {
+      "overall_quality": "good|acceptable|poor",
+      "continue_analysis": "boolean",
+      "problems": "array[string]"
+    },
+    "features": "feature_extraction_result",
+    "ranking": [
+      {
+        "season_id": "string",
+        "score": "number",
+        "confidence": "0..1"
+      }
+    ],
+    "best_match": "string|null",
+    "second_match": "string|null",
+    "reasoning": "array[string]",
+    "excluded": "array[string]"
+  },
+  "strict_output_schema": {
+    "status": "implemented_v1",
+    "quality": {
+      "overall_quality": "good|acceptable|poor",
+      "continue_analysis": "boolean",
+      "problems": "array[string]",
+      "limitations": "array[string]"
+    },
+    "dimension_results": {
+      "temperature": {
+        "classification": "warm|neutral_warm|neutral|neutral_cool|cool|uncertain",
+        "confidence": "0..1",
+        "scores": {
+          "warm": "0..100",
+          "cool": "0..100",
+          "neutral": "0..100"
+        }
+      },
+      "value": {
+        "classification": "light|medium|deep|uncertain",
+        "confidence": "0..1",
+        "scores": {
+          "light": "0..100",
+          "medium": "0..100",
+          "deep": "0..100"
+        }
+      },
+      "chroma": {
+        "classification": "bright|clear|balanced|soft|muted|uncertain",
+        "confidence": "0..1",
+        "scores": {
+          "bright": "0..100",
+          "clear": "0..100",
+          "balanced": "0..100",
+          "soft": "0..100",
+          "muted": "0..100"
+        }
+      },
+      "contrast": {
+        "classification": "low|medium|high|uncertain",
+        "confidence": "0..1",
+        "scores": {
+          "low": "0..100",
+          "medium": "0..100",
+          "high": "0..100"
+        }
+      }
+    },
+    "season_ranking": [
+      {
+        "rank": "1..12",
+        "season_id": "string",
+        "base_score": "0..100",
+        "score_after_modifiers": "0..100",
+        "hard_excluded": "boolean",
+        "applied_rules": "array[string]"
+      }
+    ],
+    "confusion_resolution": {
+      "triggered": "boolean",
+      "pair_id": "string|null",
+      "winner": "string|null",
+      "decision_margin": "number|null",
+      "unresolved": "boolean",
+      "applied_evidence": "array[object]"
+    },
+    "result": {
+      "best_match": "string|null",
+      "second_match": "string|null",
+      "third_match": "string|null",
+      "confidence": "0..1",
+      "confidence_level": "high|medium|low|insufficient",
+      "reasoning": "array[string]",
+      "excluded": "array[object]",
+      "request_better_photo": "boolean"
+    }
+  },
+  "execution_pipeline": {
+    "status": "implemented_spec_v1",
+    "purpose": "Define the exact deterministic sequence from extracted features to final season ranking.",
+    "steps": [
+      {
+        "order": 1,
+        "id": "quality_gate",
+        "action": "Evaluate quality_analysis.",
+        "stop_when": "quality_analysis.continue_analysis == false",
+        "output": "quality_status"
+      },
+      {
+        "order": 2,
+        "id": "run_temperature_engine",
+        "action": "Calculate warm, cool and neutral scores, classification and confidence.",
+        "output": "temperature_result"
+      },
+      {
+        "order": 3,
+        "id": "run_value_engine",
+        "action": "Calculate light, medium and deep scores, classification and confidence.",
+        "output": "value_result"
+      },
+      {
+        "order": 4,
+        "id": "run_chroma_engine",
+        "action": "Calculate bright, clear, balanced, soft and muted scores, classification and confidence.",
+        "output": "chroma_result"
+      },
+      {
+        "order": 5,
+        "id": "run_contrast_engine",
+        "action": "Calculate low, medium and high scores, classification and confidence.",
+        "output": "contrast_result"
+      },
+      {
+        "order": 6,
+        "id": "calculate_base_season_scores",
+        "action": "Compare four dimension classifications with all 12 season profiles.",
+        "output": "base_season_scores"
+      },
+      {
+        "order": 7,
+        "id": "apply_cross_dimension_rules",
+        "action": "Apply boosts and penalties from cross-dimension combinations.",
+        "output": "scores_after_cross_rules"
+      },
+      {
+        "order": 8,
+        "id": "apply_exclusion_rules",
+        "action": "Apply season-specific penalties and hard exclusions.",
+        "output": "scores_after_exclusions"
+      },
+      {
+        "order": 9,
+        "id": "resolve_close_candidates",
+        "action": "Run specific or generic confusion resolution for close top candidates.",
+        "output": "confusion_resolution_result"
+      },
+      {
+        "order": 10,
+        "id": "select_final_result",
+        "action": "Select best, second and third matches and calculate final confidence.",
+        "output": "final_result"
+      }
+    ]
+  },
+  "feature_execution": {
+    "status": "implemented_spec_v1",
+    "purpose": "Calculate temperature, value, chroma and contrast directly from the strict feature JSON before running the season scoring pipeline.",
+    "implemented_modules": [
+      "temperature_engine",
+      "value_engine",
+      "chroma_engine",
+      "contrast_engine"
+    ],
+    "input": "strict_input_schema.features",
+    "output": "strict_output_schema.dimension_results",
+    "fallback_policy": "Use unknown rather than guessing when evidence is insufficient."
+  },
+  "test_contract": {
+    "status": "ready_for_fixture_creation",
+    "minimum_required_cases": {
+      "clean_cases_per_season": 3,
+      "confusion_pair_cases_per_pair": 4,
+      "poor_quality_cases": 8,
+      "colored_hair_cases": 6,
+      "makeup_cases": 6
+    },
+    "expected_total_minimum": 80,
+    "test_case_schema": {
+      "case_id": "string",
+      "expected_season": "string|null",
+      "expected_second_candidate": "string|null",
+      "input": "strict_input_schema",
+      "expected_constraints": {
+        "minimum_best_score": "number|null",
+        "maximum_wrong_family_score": "number|null",
+        "must_not_select": "array[string]"
+      }
+    }
+  },
+  "unit_testing": {
+    "status": "fixtures_created",
+    "fixture_file": "diart_color_engine_unit_fixtures_v1.json",
+    "case_count": 26,
+    "coverage": {
+      "canonical_seasons": 12,
+      "priority_confusion_pair_boundaries": 12,
+      "missing_dimension_cases": 1,
+      "insufficient_quality_cases": 1
+    },
+    "limitations": [
+      "Synthetic dimension-level tests only.",
+      "No real portrait images included.",
+      "No expert-labelled validation set included.",
+      "Weights and thresholds are not yet empirically calibrated."
+    ],
+    "pass_conditions": {
+      "canonical_cases": "Expected season must rank first.",
+      "confusion_pair_cases": "Expected side of the pair must rank first.",
+      "missing_dimension_case": "One of the allowed Light seasons must rank first without high confidence.",
+      "insufficient_case": "No season selected and better photo requested."
+    }
+  },
+  "calibration": {
+    "v2_1": {
+      "issues_fixed": [
+        "Bright profiles could be classified as clear when clear_score exceeded bright_score despite strong bright markers.",
+        "Mixed light-skin/deep-hair profiles could return uncertain value instead of medium overall value."
+      ],
+      "chroma_bright_override": {
+        "minimum_bright_score": 55,
+        "maximum_clear_lead": 18,
+        "required_marker_points": 3,
+        "markers": {
+          "overall_impression.dominant_chroma == bright": 2,
+          "contrast.feature_definition == striking": 2,
+          "eyes.clarity == sparkling": 1,
+          "eyes.brightness == high": 1,
+          "eyes.iris_contrast == high": 1,
+          "contrast.overall_contrast == high": 1
+        },
+        "result": "bright"
+      },
+      "value_mixed_extremes_rule": {
+        "when": [
+          "light_score >= 25",
+          "deep_score >= 25",
+          "abs(light_score - deep_score) <= 15",
+          "medium_score >= 30"
+        ],
+        "result": "medium",
+        "reason": "The overall appearance contains both light and deep features, producing a medium composite value."
+      }
+    }
+  }
+}

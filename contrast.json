@@ -1,0 +1,339 @@
+{
+  "contrast_engine": {
+    "status": "implemented_v1",
+    "purpose": "Estimate the overall visual contrast of appearance from skin, hair, eyes, eyebrows, and feature definition before season scoring.",
+    "output": {
+      "low_score": "0..100",
+      "medium_score": "0..100",
+      "high_score": "0..100",
+      "classification": "low|medium|high|uncertain",
+      "confidence": "0..1",
+      "evidence": "array[object]",
+      "conflicts": "array[string]"
+    },
+    "evidence_priority": [
+      {
+        "source": "skin_hair_contrast",
+        "weight": 0.35,
+        "reason": "Primary structural contrast of the face."
+      },
+      {
+        "source": "skin_eye_contrast",
+        "weight": 0.2,
+        "reason": "Important secondary contrast signal."
+      },
+      {
+        "source": "feature_definition",
+        "weight": 0.2,
+        "reason": "Captures whether features appear blended or sharply separated."
+      },
+      {
+        "source": "eyebrows",
+        "weight": 0.1,
+        "reason": "Supports the overall contrast estimate."
+      },
+      {
+        "source": "iris_contrast",
+        "weight": 0.1,
+        "reason": "Supports visible eye definition."
+      },
+      {
+        "source": "overall_impression",
+        "weight": 0.05,
+        "reason": "Used only as a consistency check."
+      }
+    ],
+    "global_rules": {
+      "minimum_total_evidence_weight": 0.35,
+      "minimum_confidence_for_source_use": 0.4,
+      "unknown_handling": "Ignore unknown fields and renormalize available source weights.",
+      "hair_handling": {
+        "natural": 1.0,
+        "likely_natural": 0.85,
+        "possibly_colored": 0.45,
+        "colored": 0.2,
+        "unknown": 0.35
+      },
+      "makeup_handling": {
+        "none": 1.0,
+        "light": 0.95,
+        "visible": 0.75,
+        "heavy": 0.45,
+        "unknown": 0.75
+      },
+      "never_use_as_single_decisive_evidence": [
+        "dark_hair",
+        "light_skin",
+        "strong_limbal_ring",
+        "dark_eyebrows"
+      ],
+      "conflict_handling": "If low and high contrast evidence are both strong, classify as medium unless one side exceeds the other by at least 18 points."
+    },
+    "mapping": {
+      "skin_hair_contrast": {
+        "very_low": {
+          "low": 1.0,
+          "medium": 0.1,
+          "high": 0.0
+        },
+        "low": {
+          "low": 0.85,
+          "medium": 0.3,
+          "high": 0.0
+        },
+        "medium": {
+          "low": 0.2,
+          "medium": 1.0,
+          "high": 0.2
+        },
+        "high": {
+          "low": 0.0,
+          "medium": 0.35,
+          "high": 0.85
+        },
+        "very_high": {
+          "low": 0.0,
+          "medium": 0.1,
+          "high": 1.0
+        },
+        "unknown": null
+      },
+      "skin_eye_contrast": {
+        "very_low": {
+          "low": 0.9,
+          "medium": 0.15,
+          "high": 0.0
+        },
+        "low": {
+          "low": 0.75,
+          "medium": 0.35,
+          "high": 0.0
+        },
+        "medium": {
+          "low": 0.2,
+          "medium": 1.0,
+          "high": 0.2
+        },
+        "high": {
+          "low": 0.0,
+          "medium": 0.4,
+          "high": 0.8
+        },
+        "very_high": {
+          "low": 0.0,
+          "medium": 0.15,
+          "high": 0.95
+        },
+        "unknown": null
+      },
+      "feature_definition": {
+        "soft": {
+          "low": 1.0,
+          "medium": 0.2,
+          "high": 0.0
+        },
+        "moderate": {
+          "low": 0.25,
+          "medium": 1.0,
+          "high": 0.2
+        },
+        "defined": {
+          "low": 0.0,
+          "medium": 0.45,
+          "high": 0.8
+        },
+        "striking": {
+          "low": 0.0,
+          "medium": 0.15,
+          "high": 1.0
+        },
+        "unknown": null
+      },
+      "eyebrow_depth_relative_to_hair": {
+        "lighter": {
+          "low": 0.35,
+          "medium": 0.25,
+          "high": 0.05
+        },
+        "same": {
+          "low": 0.15,
+          "medium": 0.45,
+          "high": 0.15
+        },
+        "darker": {
+          "low": 0.05,
+          "medium": 0.3,
+          "high": 0.45
+        },
+        "unknown": null
+      },
+      "iris_contrast": {
+        "low": {
+          "low": 0.6,
+          "medium": 0.25,
+          "high": 0.0
+        },
+        "medium": {
+          "low": 0.15,
+          "medium": 0.65,
+          "high": 0.15
+        },
+        "high": {
+          "low": 0.0,
+          "medium": 0.3,
+          "high": 0.6
+        },
+        "unknown": null
+      },
+      "overall_contrast": {
+        "low": {
+          "low": 1.0,
+          "medium": 0.2,
+          "high": 0.0
+        },
+        "medium": {
+          "low": 0.15,
+          "medium": 1.0,
+          "high": 0.15
+        },
+        "high": {
+          "low": 0.0,
+          "medium": 0.2,
+          "high": 1.0
+        },
+        "uncertain": null
+      }
+    },
+    "source_rules": {
+      "skin_hair_contrast": {
+        "field": "feature_extraction.contrast.skin_hair_contrast",
+        "confidence_field": "feature_extraction.contrast.confidence",
+        "hair_naturalness_field": "feature_extraction.hair.naturalness"
+      },
+      "skin_eye_contrast": {
+        "field": "feature_extraction.contrast.skin_eye_contrast",
+        "confidence_field": "feature_extraction.contrast.confidence"
+      },
+      "feature_definition": {
+        "field": "feature_extraction.contrast.feature_definition",
+        "confidence_field": "feature_extraction.contrast.confidence"
+      },
+      "eyebrows": {
+        "field": "feature_extraction.eyebrows.depth_relative_to_hair",
+        "confidence_field": "feature_extraction.eyebrows.confidence"
+      },
+      "iris_contrast": {
+        "field": "feature_extraction.eyes.iris_contrast",
+        "confidence_field": "feature_extraction.eyes.confidence"
+      },
+      "overall_impression": {
+        "field": "feature_extraction.overall_impression.dominant_contrast",
+        "confidence_field": "feature_extraction.overall_impression.confidence"
+      }
+    },
+    "classification_thresholds": {
+      "low": {
+        "minimum_low_score": 60,
+        "minimum_gap_over_high": 18,
+        "minimum_gap_over_medium": 5
+      },
+      "medium": {
+        "minimum_medium_score": 50,
+        "maximum_low_high_gap_for_balanced_case": 17
+      },
+      "high": {
+        "minimum_high_score": 60,
+        "minimum_gap_over_low": 18,
+        "minimum_gap_over_medium": 5
+      },
+      "uncertain": {
+        "when": [
+          "total_evidence_weight_below_minimum",
+          "total_confidence_below_0.40",
+          "heavy_makeup_obscures_natural_feature_edges",
+          "colored_hair_is_primary_contrast_source",
+          "strong_source_conflicts",
+          "quality_analysis_continue_analysis_false"
+        ]
+      }
+    },
+    "confidence_rules": {
+      "base": "weighted_mean_of_used_feature_confidences",
+      "quality_multipliers": {
+        "good": 1.0,
+        "acceptable": 0.8,
+        "poor": 0.0
+      },
+      "makeup_penalty": {
+        "none": 0.0,
+        "light": 0.02,
+        "visible": 0.08,
+        "heavy": 0.18,
+        "unknown": 0.05
+      },
+      "hair_colored_penalty": {
+        "natural": 0.0,
+        "likely_natural": 0.02,
+        "possibly_colored": 0.08,
+        "colored": 0.18,
+        "unknown": 0.06
+      },
+      "source_conflict_penalty": {
+        "none": 0.0,
+        "moderate": 0.1,
+        "strong": 0.25
+      }
+    },
+    "season_effects": {
+      "low": {
+        "boost": [
+          "light_spring",
+          "light_summer",
+          "soft_summer",
+          "soft_autumn"
+        ],
+        "penalize": [
+          "bright_spring",
+          "bright_winter",
+          "true_winter",
+          "deep_winter"
+        ]
+      },
+      "medium": {
+        "boost": [
+          "true_spring",
+          "true_summer",
+          "true_autumn",
+          "deep_autumn"
+        ],
+        "penalize": []
+      },
+      "high": {
+        "boost": [
+          "bright_spring",
+          "bright_winter",
+          "true_winter",
+          "deep_winter",
+          "deep_autumn"
+        ],
+        "penalize": [
+          "light_spring",
+          "light_summer",
+          "soft_summer",
+          "soft_autumn"
+        ]
+      }
+    },
+    "evidence_log_schema": {
+      "source": "skin_hair_contrast|skin_eye_contrast|feature_definition|eyebrows|iris_contrast|overall_impression",
+      "field": "string",
+      "observed_value": "string",
+      "low_contribution": "number",
+      "medium_contribution": "number",
+      "high_contribution": "number",
+      "weight_used": "number",
+      "feature_confidence": "0..1",
+      "note": "string"
+    }
+  }
+}

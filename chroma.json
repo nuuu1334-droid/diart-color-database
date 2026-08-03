@@ -1,0 +1,577 @@
+{
+  "chroma_engine": {
+    "status": "implemented_v1",
+    "purpose": "Estimate whether the overall appearance is bright, clear, balanced, soft, or muted from observable skin, eyes, hair, lips, and feature definition before season scoring.",
+    "output": {
+      "bright_score": "0..100",
+      "clear_score": "0..100",
+      "balanced_score": "0..100",
+      "soft_score": "0..100",
+      "muted_score": "0..100",
+      "classification": "bright|clear|balanced|soft|muted|uncertain",
+      "confidence": "0..1",
+      "evidence": "array[object]",
+      "conflicts": "array[string]"
+    },
+    "evidence_priority": [
+      {
+        "source": "eyes",
+        "weight": 0.3,
+        "reason": "Eye clarity and iris definition are strong indicators of clear versus muted appearance."
+      },
+      {
+        "source": "skin",
+        "weight": 0.25,
+        "reason": "Skin clarity and translucency support the overall chroma assessment."
+      },
+      {
+        "source": "hair",
+        "weight": 0.2,
+        "reason": "Natural hair clarity and shine are useful when hair is not colored."
+      },
+      {
+        "source": "contrast",
+        "weight": 0.15,
+        "reason": "Feature definition helps separate bright or clear appearance from soft or muted appearance."
+      },
+      {
+        "source": "lips",
+        "weight": 0.05,
+        "reason": "Natural lip clarity is low-weight supporting evidence."
+      },
+      {
+        "source": "overall_impression",
+        "weight": 0.05,
+        "reason": "Used only as a consistency check."
+      }
+    ],
+    "global_rules": {
+      "minimum_total_evidence_weight": 0.35,
+      "minimum_confidence_for_source_use": 0.4,
+      "unknown_handling": "Ignore unknown fields and renormalize available source weights.",
+      "hair_handling": {
+        "natural": 1.0,
+        "likely_natural": 0.85,
+        "possibly_colored": 0.45,
+        "colored": 0.0,
+        "unknown": 0.35
+      },
+      "makeup_handling": {
+        "none": 1.0,
+        "light": 0.9,
+        "visible": 0.65,
+        "heavy": 0.3,
+        "unknown": 0.7
+      },
+      "never_use_as_single_decisive_evidence": [
+        "eye_brightness",
+        "skin_translucency",
+        "hair_shine",
+        "feature_definition",
+        "lip_color"
+      ],
+      "conflict_handling": "If clear or bright evidence and soft or muted evidence are both strong, classify as balanced unless one side exceeds the other by at least 15 points.",
+      "terminology_rule": {
+        "bright": "highest visible chroma and strongest visual impact",
+        "clear": "clean, fresh, defined chroma without necessarily extreme intensity",
+        "balanced": "neither distinctly bright nor distinctly muted",
+        "soft": "gently blended and low-definition appearance",
+        "muted": "clearly greyed, smoky, dusty, or subdued appearance"
+      }
+    },
+    "mapping": {
+      "skin_clarity": {
+        "clear": {
+          "bright": 0.35,
+          "clear": 1.0,
+          "balanced": 0.25,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "balanced": {
+          "bright": 0.1,
+          "clear": 0.25,
+          "balanced": 1.0,
+          "soft": 0.25,
+          "muted": 0.1
+        },
+        "muted": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.2,
+          "soft": 0.65,
+          "muted": 1.0
+        },
+        "unknown": null
+      },
+      "skin_translucency": {
+        "high": {
+          "bright": 0.15,
+          "clear": 0.45,
+          "balanced": 0.1,
+          "soft": 0.05,
+          "muted": 0.0
+        },
+        "medium": {
+          "bright": 0.05,
+          "clear": 0.15,
+          "balanced": 0.45,
+          "soft": 0.15,
+          "muted": 0.05
+        },
+        "low": {
+          "bright": 0.0,
+          "clear": 0.05,
+          "balanced": 0.2,
+          "soft": 0.35,
+          "muted": 0.4
+        },
+        "unknown": null
+      },
+      "eyes_clarity": {
+        "sparkling": {
+          "bright": 1.0,
+          "clear": 0.85,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "clear": {
+          "bright": 0.55,
+          "clear": 1.0,
+          "balanced": 0.2,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "balanced": {
+          "bright": 0.1,
+          "clear": 0.25,
+          "balanced": 1.0,
+          "soft": 0.25,
+          "muted": 0.1
+        },
+        "soft": {
+          "bright": 0.0,
+          "clear": 0.05,
+          "balanced": 0.25,
+          "soft": 1.0,
+          "muted": 0.6
+        },
+        "smoky": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.15,
+          "soft": 0.7,
+          "muted": 1.0
+        },
+        "deep": {
+          "bright": 0.1,
+          "clear": 0.25,
+          "balanced": 0.55,
+          "soft": 0.2,
+          "muted": 0.2
+        },
+        "unknown": null
+      },
+      "eyes_brightness": {
+        "high": {
+          "bright": 0.5,
+          "clear": 0.3,
+          "balanced": 0.05,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "medium": {
+          "bright": 0.1,
+          "clear": 0.15,
+          "balanced": 0.35,
+          "soft": 0.1,
+          "muted": 0.05
+        },
+        "low": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.15,
+          "soft": 0.35,
+          "muted": 0.45
+        },
+        "unknown": null
+      },
+      "iris_contrast": {
+        "high": {
+          "bright": 0.5,
+          "clear": 0.45,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "medium": {
+          "bright": 0.1,
+          "clear": 0.2,
+          "balanced": 0.5,
+          "soft": 0.15,
+          "muted": 0.05
+        },
+        "low": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.15,
+          "soft": 0.5,
+          "muted": 0.55
+        },
+        "unknown": null
+      },
+      "limbal_ring": {
+        "strong": {
+          "bright": 0.45,
+          "clear": 0.5,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "defined": {
+          "bright": 0.2,
+          "clear": 0.4,
+          "balanced": 0.2,
+          "soft": 0.05,
+          "muted": 0.0
+        },
+        "soft": {
+          "bright": 0.0,
+          "clear": 0.1,
+          "balanced": 0.25,
+          "soft": 0.45,
+          "muted": 0.3
+        },
+        "absent": {
+          "bright": 0.0,
+          "clear": 0.05,
+          "balanced": 0.2,
+          "soft": 0.5,
+          "muted": 0.35
+        },
+        "unknown": null
+      },
+      "hair_clarity": {
+        "clear": {
+          "bright": 0.35,
+          "clear": 1.0,
+          "balanced": 0.2,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "balanced": {
+          "bright": 0.1,
+          "clear": 0.25,
+          "balanced": 1.0,
+          "soft": 0.25,
+          "muted": 0.1
+        },
+        "muted": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.2,
+          "soft": 0.65,
+          "muted": 1.0
+        },
+        "unknown": null
+      },
+      "hair_shine": {
+        "high": {
+          "bright": 0.25,
+          "clear": 0.35,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "medium": {
+          "bright": 0.05,
+          "clear": 0.15,
+          "balanced": 0.35,
+          "soft": 0.1,
+          "muted": 0.05
+        },
+        "low": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.15,
+          "soft": 0.35,
+          "muted": 0.4
+        },
+        "unknown": null
+      },
+      "feature_definition": {
+        "striking": {
+          "bright": 1.0,
+          "clear": 0.55,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "defined": {
+          "bright": 0.4,
+          "clear": 0.65,
+          "balanced": 0.3,
+          "soft": 0.05,
+          "muted": 0.0
+        },
+        "moderate": {
+          "bright": 0.1,
+          "clear": 0.2,
+          "balanced": 1.0,
+          "soft": 0.2,
+          "muted": 0.1
+        },
+        "soft": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.2,
+          "soft": 1.0,
+          "muted": 0.7
+        },
+        "unknown": null
+      },
+      "lips_clarity": {
+        "clear": {
+          "bright": 0.25,
+          "clear": 0.65,
+          "balanced": 0.2,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "balanced": {
+          "bright": 0.05,
+          "clear": 0.15,
+          "balanced": 0.55,
+          "soft": 0.15,
+          "muted": 0.05
+        },
+        "muted": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.15,
+          "soft": 0.55,
+          "muted": 0.7
+        },
+        "unknown": null
+      },
+      "overall_chroma": {
+        "bright": {
+          "bright": 1.0,
+          "clear": 0.55,
+          "balanced": 0.1,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "clear": {
+          "bright": 0.55,
+          "clear": 1.0,
+          "balanced": 0.2,
+          "soft": 0.0,
+          "muted": 0.0
+        },
+        "balanced": {
+          "bright": 0.1,
+          "clear": 0.2,
+          "balanced": 1.0,
+          "soft": 0.2,
+          "muted": 0.1
+        },
+        "soft": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.2,
+          "soft": 1.0,
+          "muted": 0.6
+        },
+        "muted": {
+          "bright": 0.0,
+          "clear": 0.0,
+          "balanced": 0.1,
+          "soft": 0.65,
+          "muted": 1.0
+        },
+        "uncertain": null
+      }
+    },
+    "source_rules": {
+      "skin": {
+        "clarity_field": "feature_extraction.skin.clarity",
+        "translucency_field": "feature_extraction.skin.translucency",
+        "confidence_field": "feature_extraction.skin.confidence",
+        "internal_weights": {
+          "clarity": 0.8,
+          "translucency": 0.2
+        }
+      },
+      "eyes": {
+        "clarity_field": "feature_extraction.eyes.clarity",
+        "brightness_field": "feature_extraction.eyes.brightness",
+        "iris_contrast_field": "feature_extraction.eyes.iris_contrast",
+        "limbal_ring_field": "feature_extraction.eyes.limbal_ring",
+        "confidence_field": "feature_extraction.eyes.confidence",
+        "internal_weights": {
+          "clarity": 0.5,
+          "brightness": 0.2,
+          "iris_contrast": 0.2,
+          "limbal_ring": 0.1
+        }
+      },
+      "hair": {
+        "clarity_field": "feature_extraction.hair.clarity",
+        "shine_field": "feature_extraction.hair.shine",
+        "confidence_field": "feature_extraction.hair.confidence",
+        "naturalness_field": "feature_extraction.hair.naturalness",
+        "internal_weights": {
+          "clarity": 0.75,
+          "shine": 0.25
+        }
+      },
+      "contrast": {
+        "field": "feature_extraction.contrast.feature_definition",
+        "confidence_field": "feature_extraction.contrast.confidence"
+      },
+      "lips": {
+        "field": "feature_extraction.lips.clarity",
+        "confidence_field": "feature_extraction.lips.confidence"
+      },
+      "overall_impression": {
+        "field": "feature_extraction.overall_impression.dominant_chroma",
+        "confidence_field": "feature_extraction.overall_impression.confidence"
+      }
+    },
+    "classification_thresholds": {
+      "bright": {
+        "minimum_bright_score": 62,
+        "minimum_gap_over_muted": 22,
+        "minimum_gap_over_soft": 15
+      },
+      "clear": {
+        "minimum_clear_score": 58,
+        "minimum_gap_over_muted": 18,
+        "minimum_gap_over_soft": 10
+      },
+      "balanced": {
+        "minimum_balanced_score": 48,
+        "maximum_clear_muted_gap_for_balanced_case": 14
+      },
+      "soft": {
+        "minimum_soft_score": 55,
+        "minimum_gap_over_clear": 10,
+        "minimum_gap_over_bright": 15
+      },
+      "muted": {
+        "minimum_muted_score": 62,
+        "minimum_gap_over_clear": 18,
+        "minimum_gap_over_bright": 22
+      },
+      "uncertain": {
+        "when": [
+          "total_evidence_weight_below_minimum",
+          "total_confidence_below_0.40",
+          "heavy_makeup_and_low_natural_feature_visibility",
+          "strong_source_conflicts",
+          "quality_analysis_continue_analysis_false"
+        ]
+      }
+    },
+    "confidence_rules": {
+      "base": "weighted_mean_of_used_feature_confidences",
+      "quality_multipliers": {
+        "good": 1.0,
+        "acceptable": 0.8,
+        "poor": 0.0
+      },
+      "makeup_penalty": {
+        "none": 0.0,
+        "light": 0.02,
+        "visible": 0.08,
+        "heavy": 0.18,
+        "unknown": 0.05
+      },
+      "hair_colored_penalty": 0.05,
+      "filter_or_beauty_processing_penalty": {
+        "none": 0.0,
+        "possible": 0.1,
+        "visible": 0.2
+      },
+      "source_conflict_penalty": {
+        "none": 0.0,
+        "moderate": 0.1,
+        "strong": 0.25
+      }
+    },
+    "season_effects": {
+      "bright": {
+        "boost": [
+          "bright_spring",
+          "bright_winter"
+        ],
+        "penalize": [
+          "soft_summer",
+          "soft_autumn"
+        ]
+      },
+      "clear": {
+        "boost": [
+          "true_spring",
+          "bright_spring",
+          "bright_winter",
+          "true_winter"
+        ],
+        "penalize": [
+          "soft_summer",
+          "soft_autumn"
+        ]
+      },
+      "balanced": {
+        "boost": [
+          "light_spring",
+          "light_summer",
+          "true_autumn",
+          "deep_autumn",
+          "deep_winter"
+        ],
+        "penalize": []
+      },
+      "soft": {
+        "boost": [
+          "light_summer",
+          "true_summer",
+          "soft_summer",
+          "soft_autumn"
+        ],
+        "penalize": [
+          "bright_spring",
+          "bright_winter"
+        ]
+      },
+      "muted": {
+        "boost": [
+          "soft_summer",
+          "soft_autumn",
+          "true_summer"
+        ],
+        "penalize": [
+          "bright_spring",
+          "bright_winter",
+          "true_spring",
+          "true_winter"
+        ]
+      }
+    },
+    "evidence_log_schema": {
+      "source": "skin|eyes|hair|contrast|lips|overall_impression",
+      "field": "string",
+      "observed_value": "string",
+      "bright_contribution": "number",
+      "clear_contribution": "number",
+      "balanced_contribution": "number",
+      "soft_contribution": "number",
+      "muted_contribution": "number",
+      "weight_used": "number",
+      "feature_confidence": "0..1",
+      "note": "string"
+    }
+  }
+}
