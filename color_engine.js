@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.5.0
+ * DiArt Color Engine v4.6.0
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.5.0";
+const ENGINE_RUNTIME_VERSION = "4.6.0";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -510,12 +510,12 @@ function calculateEvidenceReliability(extractorData, adaptedData) {
   );
 
   return {
-    mode: "temperature_value_and_chroma",
+    mode: "all_dimensions",
     applied_to_calculations: {
       temperature: true,
       value: true,
       chroma: true,
-      contrast: false,
+      contrast: true,
       season_scoring: false
     },
     quality_factor: round(qualityFactor, 3),
@@ -1278,17 +1278,320 @@ function calculateChroma(config, features, quality, reliability) {
   };
 }
 
-function calculateContrast(config, features, quality) {
-  const cfg=config.contrast_engine, totals={low:0,medium:0,high:0}, evidence=[]; const sw=Object.fromEntries(cfg.evidence_priority.map(x=>[x.source,Number(x.weight)])); let used=0;
-  const c=features.contrast||{}, cc=clamp(c.confidence), hair=features.hair||{}, hm=cfg.global_rules.hair_handling?.[hair.naturalness]??.35;
-  used+=addMapping(totals,cfg.mapping.skin_hair_contrast?.[c.skin_hair_contrast],sw.skin_hair_contrast*hm,cc,evidence,{source:"skin_hair_contrast",field:"skin_hair_contrast",observed_value:c.skin_hair_contrast});
-  used+=addMapping(totals,cfg.mapping.skin_eye_contrast?.[c.skin_eye_contrast],sw.skin_eye_contrast,cc,evidence,{source:"skin_eye_contrast",field:"skin_eye_contrast",observed_value:c.skin_eye_contrast});
-  used+=addMapping(totals,cfg.mapping.feature_definition?.[c.feature_definition],sw.feature_definition,cc,evidence,{source:"feature_definition",field:"feature_definition",observed_value:c.feature_definition});
-  const eyes=features.eyes||{}; used+=addMapping(totals,cfg.mapping.iris_contrast?.[eyes.iris_contrast],sw.iris_contrast,clamp(eyes.confidence),evidence,{source:"iris_contrast",field:"iris_contrast",observed_value:eyes.iris_contrast});
-  const overall=features.overall_impression||{}; used+=addMapping(totals,cfg.mapping.overall_contrast?.[overall.dominant_contrast],sw.overall_impression,clamp(overall.confidence),evidence,{source:"overall_impression",field:"dominant_contrast",observed_value:overall.dominant_contrast});
-  const scores=normalizedScores(totals,used), ordered=Object.entries(scores).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])); let classification="uncertain";
-  if(used>=cfg.global_rules.minimum_total_evidence_weight) classification=(ordered[0][1]-ordered[1][1]>=5)?ordered[0][0]:"uncertain";
-  return {classification,confidence:round(Math.min(1,used/Object.values(sw).reduce((a,b)=>a+b,0))*qualityMultiplier(quality.overall_quality),3),scores,evidence,conflicts:[]};
+function calculateContrast(config, features, quality, reliability) {
+  const cfg = config.contrast_engine;
+  const totals = { low: 0, medium: 0, high: 0 };
+  const evidence = [];
+
+  const sw = Object.fromEntries(
+    cfg.evidence_priority.map(item => [
+      item.source,
+      Number(item.weight)
+    ])
+  );
+
+  const sourceReliability = reliability?.sources || {};
+
+  function reliabilityOf(sourceName) {
+    const value = Number(
+      sourceReliability[sourceName]?.reliability
+    );
+
+    return Number.isFinite(value)
+      ? clamp(value)
+      : 1;
+  }
+
+  function combinedReliability(sourceNames) {
+    return clamp(
+      meanNumbers(
+        sourceNames.map(reliabilityOf),
+        1
+      )
+    );
+  }
+
+  function addContrastEvidence(
+    sourceName,
+    mapping,
+    baseWeight,
+    featureConfidence,
+    sourceReliabilityValue,
+    meta,
+    extraMultiplier = 1
+  ) {
+    return addMapping(
+      totals,
+      mapping,
+      baseWeight *
+        sourceReliabilityValue *
+        extraMultiplier,
+      featureConfidence,
+      evidence,
+      {
+        ...meta,
+        base_source_weight: round(baseWeight, 4),
+        source_reliability: round(
+          sourceReliabilityValue,
+          3
+        ),
+        reliability_applied: true
+      }
+    );
+  }
+
+  let used = 0;
+
+  const contrast = features.contrast || {};
+  const contrastConfidence = clamp(
+    contrast.confidence
+  );
+
+  const hair = features.hair || {};
+
+  const hairNaturalnessMultiplier =
+    cfg.global_rules.hair_handling?.[
+      hair.naturalness
+    ] ?? 0.35;
+
+  const skinHairReliability = combinedReliability([
+    "skin",
+    "hair",
+    "contrast"
+  ]);
+
+  used += addContrastEvidence(
+    "skin_hair_contrast",
+    cfg.mapping.skin_hair_contrast?.[
+      contrast.skin_hair_contrast
+    ],
+    Number(sw.skin_hair_contrast || 0),
+    contrastConfidence,
+    skinHairReliability,
+    {
+      source: "skin_hair_contrast",
+      field: "skin_hair_contrast",
+      observed_value: contrast.skin_hair_contrast,
+      naturalness_multiplier: round(
+        hairNaturalnessMultiplier,
+        3
+      )
+    },
+    hairNaturalnessMultiplier
+  );
+
+  const skinEyeReliability = combinedReliability([
+    "skin",
+    "eyes",
+    "contrast"
+  ]);
+
+  used += addContrastEvidence(
+    "skin_eye_contrast",
+    cfg.mapping.skin_eye_contrast?.[
+      contrast.skin_eye_contrast
+    ],
+    Number(sw.skin_eye_contrast || 0),
+    contrastConfidence,
+    skinEyeReliability,
+    {
+      source: "skin_eye_contrast",
+      field: "skin_eye_contrast",
+      observed_value: contrast.skin_eye_contrast
+    }
+  );
+
+  const definitionReliability = reliabilityOf(
+    "contrast"
+  );
+
+  used += addContrastEvidence(
+    "feature_definition",
+    cfg.mapping.feature_definition?.[
+      contrast.feature_definition
+    ],
+    Number(sw.feature_definition || 0),
+    contrastConfidence,
+    definitionReliability,
+    {
+      source: "feature_definition",
+      field: "feature_definition",
+      observed_value: contrast.feature_definition
+    }
+  );
+
+  const eyes = features.eyes || {};
+  const eyeReliability = reliabilityOf("eyes");
+
+  used += addContrastEvidence(
+    "iris_contrast",
+    cfg.mapping.iris_contrast?.[
+      eyes.iris_contrast
+    ],
+    Number(sw.iris_contrast || 0),
+    clamp(eyes.confidence),
+    eyeReliability,
+    {
+      source: "iris_contrast",
+      field: "iris_contrast",
+      observed_value: eyes.iris_contrast
+    }
+  );
+
+  const overall = features.overall_impression || {};
+
+  const overallReliability = clamp(
+    meanNumbers([
+      reliabilityOf("skin"),
+      reliabilityOf("eyes"),
+      reliabilityOf("hair"),
+      reliabilityOf("contrast"),
+      reliability?.overall
+    ], 1)
+  );
+
+  used += addContrastEvidence(
+    "overall_impression",
+    cfg.mapping.overall_contrast?.[
+      overall.dominant_contrast
+    ],
+    Number(sw.overall_impression || 0),
+    clamp(overall.confidence),
+    overallReliability,
+    {
+      source: "overall_impression",
+      field: "dominant_contrast",
+      observed_value: overall.dominant_contrast
+    }
+  );
+
+  const scores = normalizedScores(totals, used);
+
+  const ordered = Object.entries(scores).sort(
+    (a, b) => b[1] - a[1] ||
+      a[0].localeCompare(b[0])
+  );
+
+  let classification = "uncertain";
+
+  const originalTotalWeight =
+    Object.values(sw).reduce(
+      (sum, value) => sum + value,
+      0
+    );
+
+  const adjustedAvailableWeight =
+    Number(sw.skin_hair_contrast || 0) *
+      hairNaturalnessMultiplier *
+      skinHairReliability +
+    Number(sw.skin_eye_contrast || 0) *
+      skinEyeReliability +
+    Number(sw.feature_definition || 0) *
+      definitionReliability +
+    Number(sw.iris_contrast || 0) *
+      eyeReliability +
+    Number(sw.overall_impression || 0) *
+      overallReliability;
+
+  const originalMinimum =
+    Number(
+      cfg.global_rules.minimum_total_evidence_weight
+    ) || 0.35;
+
+  const adjustedMinimum =
+    originalTotalWeight > 0
+      ? originalMinimum *
+        (
+          adjustedAvailableWeight /
+          originalTotalWeight
+        )
+      : originalMinimum;
+
+  /*
+   * The original Contrast classification logic is preserved:
+   * the leading class must exceed the second by at least 5 points.
+   */
+  if (
+    used >= adjustedMinimum &&
+    ordered.length >= 2
+  ) {
+    classification =
+      ordered[0][1] - ordered[1][1] >= 5
+        ? ordered[0][0]
+        : "uncertain";
+  }
+
+  const coverage =
+    adjustedAvailableWeight > 0
+      ? used / adjustedAvailableWeight
+      : 0;
+
+  const topGap =
+    ordered.length >= 2
+      ? Math.max(
+          0,
+          ordered[0][1] - ordered[1][1]
+        )
+      : 0;
+
+  const separationFactor = clamp(topGap / 20);
+
+  /*
+   * Confidence keeps the old coverage × photo-quality principle.
+   * Reliability changes the available and used weights equally,
+   * so it redistributes source influence without collapsing the
+   * entire dimension confidence.
+   */
+  const confidence = round(
+    Math.min(1, coverage) *
+      qualityMultiplier(
+        quality.overall_quality
+      ),
+    3
+  );
+
+  return {
+    classification,
+    confidence,
+    scores,
+    evidence,
+    conflicts: [],
+    reliability: {
+      applied: true,
+      available_weight: round(
+        adjustedAvailableWeight,
+        4
+      ),
+      used_weight: round(used, 4),
+      coverage: round(coverage, 3),
+      score_separation: round(
+        separationFactor,
+        3
+      ),
+      sources: {
+        skin_hair_contrast: round(
+          skinHairReliability,
+          3
+        ),
+        skin_eye_contrast: round(
+          skinEyeReliability,
+          3
+        ),
+        feature_definition: round(
+          definitionReliability,
+          3
+        ),
+        iris_contrast: round(
+          eyeReliability,
+          3
+        ),
+        overall_impression: round(
+          overallReliability,
+          3
+        )
+      }
+    }
+  };
 }
 
 function getDimensionWeights(config) {
@@ -1771,7 +2074,8 @@ const dims={
   contrast:calculateContrast(
     config,
     adapted.features,
-    adapted.quality
+    adapted.quality,
+    evidenceReliability
   )
 };
 const decision=runScoring(config,dims,adapted.quality.overall_quality,adapted.features);
