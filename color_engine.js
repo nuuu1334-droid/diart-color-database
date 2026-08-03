@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.2.0
+ * DiArt Color Engine v4.3.0
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.2.0";
+const ENGINE_RUNTIME_VERSION = "4.3.0";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -510,8 +510,14 @@ function calculateEvidenceReliability(extractorData, adaptedData) {
   );
 
   return {
-    mode: "diagnostic_only",
-    applied_to_calculations: false,
+    mode: "temperature_only",
+    applied_to_calculations: {
+      temperature: true,
+      value: false,
+      chroma: false,
+      contrast: false,
+      season_scoring: false
+    },
     quality_factor: round(qualityFactor, 3),
     sources,
     dimensions,
@@ -531,25 +537,272 @@ function normalizedScores(totals, used) {
 }
 function qualityMultiplier(q) { return ({good:1, acceptable:.8, poor:0, unusable:0})[q] ?? 0; }
 
-function calculateTemperature(config, features, quality) {
-  const cfg = config.temperature_engine, totals={warm:0,cool:0,neutral:0}, evidence=[];
-  const sw=Object.fromEntries(cfg.evidence_priority.map(x=>[x.source,Number(x.weight)])); let used=0;
-  const skin=features.skin||{}, sc=clamp(skin.confidence);
-  for (const [field,section,w] of [["temperature","temperature",.55],["undertone_family","undertone_family",.3],["natural_blush","natural_blush",.1],["freckles","freckles",.05]]) used += addMapping(totals,cfg.skin_rules[section]?.[skin[field]],sw.skin*w,sc,evidence,{source:"skin",field,observed_value:skin[field]});
-  const lips=features.lips||{}, lc=clamp(lips.confidence);
-  for (const [field,section,w] of [["temperature","temperature",.7],["natural_color","natural_color",.3]]) used += addMapping(totals,cfg.lips_rules[section]?.[lips[field]],sw.lips*w,lc,evidence,{source:"lips",field,observed_value:lips[field]});
-  const eyes=features.eyes||{}, ec=clamp(eyes.confidence);
-  used += addMapping(totals,cfg.eyes_rules.temperature?.[eyes.temperature],sw.eyes*.75,ec,evidence,{source:"eyes",field:"temperature",observed_value:eyes.temperature});
-  used += addMapping(totals,cfg.eyes_rules.supporting_markers?.[`golden_flecks_${eyes.golden_flecks}`],sw.eyes*.125,ec,evidence,{source:"eyes",field:"golden_flecks",observed_value:eyes.golden_flecks});
-  used += addMapping(totals,cfg.eyes_rules.supporting_markers?.[`cool_gray_veil_${eyes.cool_gray_veil}`],sw.eyes*.125,ec,evidence,{source:"eyes",field:"cool_gray_veil",observed_value:eyes.cool_gray_veil});
-  const hair=features.hair||{}, hc=clamp(hair.confidence), hm=({natural:1,likely_natural:.85,possibly_colored:.45,colored:0,unknown:.35})[hair.naturalness]??.35;
-  for (const [field,section,w] of [["temperature","temperature",.55],["undertone","undertone",.3],["natural_highlights","natural_highlights",.15]]) used += addMapping(totals,cfg.hair_rules[section]?.[hair[field]],sw.hair*w*hm,hc,evidence,{source:"hair",field,observed_value:hair[field]});
-  const scores=normalizedScores(totals,used), gap=scores.warm-scores.cool; let classification="uncertain";
-  if (used>=cfg.global_rules.minimum_total_evidence_weight) {
-    if(scores.warm>=65&&gap>=20) classification="warm"; else if(scores.cool>=65&&-gap>=20) classification="cool"; else if(scores.warm>=52&&gap>=8) classification="neutral_warm"; else if(scores.cool>=52&&-gap>=8) classification="neutral_cool"; else if(Math.abs(gap)<=7) classification="neutral"; else classification=gap>0?"neutral_warm":"neutral_cool";
+function calculateTemperature(config, features, quality, reliability) {
+  const cfg = config.temperature_engine;
+  const totals = { warm: 0, cool: 0, neutral: 0 };
+  const evidence = [];
+
+  const sw = Object.fromEntries(
+    cfg.evidence_priority.map(item => [
+      item.source,
+      Number(item.weight)
+    ])
+  );
+
+  const sourceReliability = reliability?.sources || {};
+
+  function reliabilityOf(sourceName) {
+    const value = Number(
+      sourceReliability[sourceName]?.reliability
+    );
+
+    return Number.isFinite(value)
+      ? clamp(value)
+      : 1;
   }
-  const confidence=round(Math.min(1,used/Object.values(sw).reduce((a,b)=>a+b,0))*qualityMultiplier(quality.overall_quality),3);
-  return {classification,confidence,scores,evidence,conflicts:[]};
+
+  function adjustedSourceWeight(sourceName) {
+    return Number(sw[sourceName] || 0) *
+      reliabilityOf(sourceName);
+  }
+
+  function addTemperatureEvidence(
+    sourceName,
+    mapping,
+    subWeight,
+    featureConfidence,
+    meta,
+    extraMultiplier = 1
+  ) {
+    const baseSourceWeight = Number(sw[sourceName] || 0);
+    const sourceReliabilityValue = reliabilityOf(sourceName);
+
+    return addMapping(
+      totals,
+      mapping,
+      baseSourceWeight *
+        sourceReliabilityValue *
+        subWeight *
+        extraMultiplier,
+      featureConfidence,
+      evidence,
+      {
+        ...meta,
+        base_source_weight: round(baseSourceWeight, 4),
+        source_reliability: round(
+          sourceReliabilityValue,
+          3
+        ),
+        reliability_applied: true
+      }
+    );
+  }
+
+  let used = 0;
+
+  const skin = features.skin || {};
+  const skinConfidence = clamp(skin.confidence);
+
+  for (const [field, section, subWeight] of [
+    ["temperature", "temperature", 0.55],
+    ["undertone_family", "undertone_family", 0.30],
+    ["natural_blush", "natural_blush", 0.10],
+    ["freckles", "freckles", 0.05]
+  ]) {
+    used += addTemperatureEvidence(
+      "skin",
+      cfg.skin_rules[section]?.[skin[field]],
+      subWeight,
+      skinConfidence,
+      {
+        source: "skin",
+        field,
+        observed_value: skin[field]
+      }
+    );
+  }
+
+  const lips = features.lips || {};
+  const lipsConfidence = clamp(lips.confidence);
+
+  for (const [field, section, subWeight] of [
+    ["temperature", "temperature", 0.70],
+    ["natural_color", "natural_color", 0.30]
+  ]) {
+    used += addTemperatureEvidence(
+      "lips",
+      cfg.lips_rules[section]?.[lips[field]],
+      subWeight,
+      lipsConfidence,
+      {
+        source: "lips",
+        field,
+        observed_value: lips[field]
+      }
+    );
+  }
+
+  const eyes = features.eyes || {};
+  const eyesConfidence = clamp(eyes.confidence);
+
+  used += addTemperatureEvidence(
+    "eyes",
+    cfg.eyes_rules.temperature?.[eyes.temperature],
+    0.75,
+    eyesConfidence,
+    {
+      source: "eyes",
+      field: "temperature",
+      observed_value: eyes.temperature
+    }
+  );
+
+  used += addTemperatureEvidence(
+    "eyes",
+    cfg.eyes_rules.supporting_markers?.[
+      `golden_flecks_${eyes.golden_flecks}`
+    ],
+    0.125,
+    eyesConfidence,
+    {
+      source: "eyes",
+      field: "golden_flecks",
+      observed_value: eyes.golden_flecks
+    }
+  );
+
+  used += addTemperatureEvidence(
+    "eyes",
+    cfg.eyes_rules.supporting_markers?.[
+      `cool_gray_veil_${eyes.cool_gray_veil}`
+    ],
+    0.125,
+    eyesConfidence,
+    {
+      source: "eyes",
+      field: "cool_gray_veil",
+      observed_value: eyes.cool_gray_veil
+    }
+  );
+
+  const hair = features.hair || {};
+  const hairConfidence = clamp(hair.confidence);
+
+  const hairNaturalnessMultiplier = ({
+    natural: 1,
+    likely_natural: 0.85,
+    possibly_colored: 0.45,
+    likely_colored: 0.15,
+    colored: 0,
+    unclear: 0.35,
+    unknown: 0.35
+  })[hair.naturalness] ?? 0.35;
+
+  for (const [field, section, subWeight] of [
+    ["temperature", "temperature", 0.55],
+    ["undertone", "undertone", 0.30],
+    ["natural_highlights", "natural_highlights", 0.15]
+  ]) {
+    used += addTemperatureEvidence(
+      "hair",
+      cfg.hair_rules[section]?.[hair[field]],
+      subWeight,
+      hairConfidence,
+      {
+        source: "hair",
+        field,
+        observed_value: hair[field],
+        naturalness_multiplier: round(
+          hairNaturalnessMultiplier,
+          3
+        )
+      },
+      hairNaturalnessMultiplier
+    );
+  }
+
+  const scores = normalizedScores(totals, used);
+  const gap = scores.warm - scores.cool;
+  let classification = "uncertain";
+
+  const availableReliabilityWeight =
+    adjustedSourceWeight("skin") +
+    adjustedSourceWeight("lips") +
+    adjustedSourceWeight("eyes") +
+    adjustedSourceWeight("hair") *
+      hairNaturalnessMultiplier;
+
+  const minimumEvidence =
+    Number(
+      cfg.global_rules.minimum_total_evidence_weight
+    ) || 0.35;
+
+  const originalTemperatureWeight =
+    Number(sw.skin || 0) +
+    Number(sw.lips || 0) +
+    Number(sw.eyes || 0) +
+    Number(sw.hair || 0) *
+      hairNaturalnessMultiplier;
+
+  const scaledMinimumEvidence =
+    originalTemperatureWeight > 0
+      ? minimumEvidence *
+        (
+          availableReliabilityWeight /
+          originalTemperatureWeight
+        )
+      : minimumEvidence;
+
+  if (used >= scaledMinimumEvidence) {
+    if (scores.warm >= 65 && gap >= 20) {
+      classification = "warm";
+    } else if (scores.cool >= 65 && -gap >= 20) {
+      classification = "cool";
+    } else if (scores.warm >= 52 && gap >= 8) {
+      classification = "neutral_warm";
+    } else if (scores.cool >= 52 && -gap >= 8) {
+      classification = "neutral_cool";
+    } else if (Math.abs(gap) <= 7) {
+      classification = "neutral";
+    } else {
+      classification =
+        gap > 0 ? "neutral_warm" : "neutral_cool";
+    }
+  }
+
+  const confidenceCoverage =
+    availableReliabilityWeight > 0
+      ? used / availableReliabilityWeight
+      : 0;
+
+  const confidence = round(
+    Math.min(1, confidenceCoverage) *
+      qualityMultiplier(quality.overall_quality),
+    3
+  );
+
+  return {
+    classification,
+    confidence,
+    scores,
+    evidence,
+    conflicts: [],
+    reliability: {
+      applied: true,
+      available_weight: round(
+        availableReliabilityWeight,
+        4
+      ),
+      used_weight: round(used, 4),
+      coverage: round(confidenceCoverage, 3),
+      sources: {
+        skin: round(reliabilityOf("skin"), 3),
+        lips: round(reliabilityOf("lips"), 3),
+        eyes: round(reliabilityOf("eyes"), 3),
+        hair: round(reliabilityOf("hair"), 3)
+      }
+    }
+  };
 }
 
 function calculateValue(config, features, quality) {
@@ -1049,7 +1302,29 @@ assert(config.engine&&config.temperature_engine&&config.value_engine&&config.chr
 const adapted=adaptExtractor(extractor);
 const evidenceReliability=calculateEvidenceReliability(extractor,adapted);
 if(!adapted.quality.continue_analysis){return{ok:true,stage:"completed",runtime_version:ENGINE_RUNTIME_VERSION,engine_version:config.engine.version,quality:adapted.quality,evidence_reliability:evidenceReliability,dimension_results:{},season_ranking:[],result:{best_match:null,second_match:null,third_match:null,confidence:0,confidence_percent:0,confidence_level:"insufficient",request_better_photo:true}};}
-const dims={temperature:calculateTemperature(config,adapted.features,adapted.quality),value:calculateValue(config,adapted.features,adapted.quality),chroma:calculateChroma(config,adapted.features,adapted.quality),contrast:calculateContrast(config,adapted.features,adapted.quality)};
+const dims={
+  temperature:calculateTemperature(
+    config,
+    adapted.features,
+    adapted.quality,
+    evidenceReliability
+  ),
+  value:calculateValue(
+    config,
+    adapted.features,
+    adapted.quality
+  ),
+  chroma:calculateChroma(
+    config,
+    adapted.features,
+    adapted.quality
+  ),
+  contrast:calculateContrast(
+    config,
+    adapted.features,
+    adapted.quality
+  )
+};
 const decision=runScoring(config,dims,adapted.quality.overall_quality,adapted.features);
 return {
   ok: true,
