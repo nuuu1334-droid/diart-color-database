@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.0
+ * DiArt Color Engine v4.9.1
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.0";
+const ENGINE_RUNTIME_VERSION = "4.9.1";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -284,15 +284,10 @@ function adaptExtractor(ex) {
 
 
 /* =========================================================
-   EVIDENCE RELIABILITY ENGINE — DIAGNOSTIC MODE
+   EVIDENCE RELIABILITY ENGINE — ACTIVE STABLE MODE
 
-   IMPORTANT:
-   Version 4.2.0 calculates and exposes source reliability,
-   but DOES NOT apply it to Temperature, Value, Chroma,
-   Contrast, Season Scoring or Confidence.
-
-   This preserves the exact v4.1.0 decision logic while we
-   validate the reliability model on real photographs.
+   Source reliability, feature confidence and evidence coverage
+   are separate signals. Reliability is configured through JSON.
 ========================================================= */
 
 function validateConfig(config) {
@@ -478,7 +473,7 @@ function knownFieldRatio(source, fieldNames) {
   return known / fieldNames.length;
 }
 
-function calculateEvidenceReliability(extractorData, adaptedData) {
+function calculateEvidenceReliability(extractorData, adaptedData, config) {
   const imageQuality = extractorData.image_quality || {};
   const observed = extractorData.observed_colors || {};
   const visual = extractorData.visual_features || {};
@@ -538,15 +533,17 @@ function calculateEvidenceReliability(extractorData, adaptedData) {
         "undertone",
         "clarity"
       ],
-      distortionFactor: {
-        likely_natural: 1,
-        natural: 1,
-        possibly_colored: 0.58,
-        likely_colored: 0.25,
-        colored: 0.15,
-        unclear: 0.45,
-        unknown: 0.45
-      }[
+      distortionFactor: (
+        config.reliability_engine_v2?.hair_distortion || {
+          likely_natural: 1,
+          natural: 1,
+          possibly_colored: 0.58,
+          likely_colored: 0.25,
+          colored: 0.15,
+          unclear: 0.45,
+          unknown: 0.45
+        }
+      )[
         imageQuality.hair_naturalness ??
         adaptedFeatures.hair?.naturalness
       ] ?? 0.45
@@ -621,10 +618,14 @@ function calculateEvidenceReliability(extractorData, adaptedData) {
 
     const distortion = clamp(spec.distortionFactor ?? 1);
 
-    const reliabilityWeights = {
-      completeness: 0.45,
-      quality: 0.55
-    };
+    const reliabilitySettings =
+      config.reliability_engine_v2 || {};
+
+    const reliabilityWeights =
+      reliabilitySettings.source_reliability_weights || {
+        completeness: 0.45,
+        quality: 0.55
+      };
 
     const reliability = clamp(
       visibility *
@@ -647,42 +648,86 @@ function calculateEvidenceReliability(extractorData, adaptedData) {
     };
   }
 
-  const dimensions = {
-    temperature: round(
-      sources.skin.reliability * 0.50 +
-      sources.eyes.reliability * 0.18 +
-      sources.hair.reliability * 0.12 +
-      sources.lips.reliability * 0.15 +
-      sources.eyebrows.reliability * 0.05,
-      3
-    ),
+  function weightedAvailableReliability(items) {
+    const available = items.filter(
+      item =>
+        Number(item.weight) > 0 &&
+        (
+          item.alwaysAvailable ||
+          sources[item.source]?.visibility > 0
+        )
+    );
 
-    value: round(
-      sources.skin.reliability * 0.30 +
-      sources.eyes.reliability * 0.25 +
-      sources.hair.reliability * 0.25 +
-      qualityFactor * 0.20,
-      3
-    ),
+    const totalWeight = available.reduce(
+      (sum, item) => sum + Number(item.weight),
+      0
+    );
 
-    chroma: round(
-      sources.skin.reliability * 0.32 +
-      sources.eyes.reliability * 0.30 +
-      sources.hair.reliability * 0.13 +
-      sources.contrast.reliability * 0.15 +
-      qualityFactor * 0.10,
-      3
-    ),
+    if (totalWeight <= 0) return 0;
 
-    contrast: round(
-      sources.contrast.reliability * 0.45 +
-      sources.skin.reliability * 0.15 +
-      sources.eyes.reliability * 0.20 +
-      sources.hair.reliability * 0.10 +
-      qualityFactor * 0.10,
+    return round(
+      available.reduce(
+        (sum, item) =>
+          sum +
+          Number(item.weight) *
+          (
+            item.source === "quality"
+              ? qualityFactor
+              : Number(sources[item.source]?.reliability || 0)
+          ),
+        0
+      ) / totalWeight,
       3
+    );
+  }
+
+  const dimensionWeights =
+    config.reliability_engine_v2?.dimension_source_weights || {
+      temperature: {
+        skin: 0.50,
+        eyes: 0.18,
+        hair: 0.12,
+        lips: 0.15,
+        eyebrows: 0.05
+      },
+      value: {
+        skin: 0.30,
+        eyes: 0.25,
+        hair: 0.25,
+        quality: 0.20
+      },
+      chroma: {
+        skin: 0.32,
+        eyes: 0.30,
+        hair: 0.13,
+        contrast: 0.15,
+        quality: 0.10
+      },
+      contrast: {
+        contrast: 0.45,
+        skin: 0.15,
+        eyes: 0.20,
+        hair: 0.10,
+        quality: 0.10
+      }
+    };
+
+  const dimensions = Object.fromEntries(
+    Object.entries(dimensionWeights).map(
+      ([dimension, sourceWeights]) => [
+        dimension,
+        weightedAvailableReliability(
+          Object.entries(sourceWeights).map(
+            ([source, weight]) => ({
+              source,
+              weight,
+              alwaysAvailable: source === "quality"
+            })
+          )
+        )
+      ]
     )
-  };
+  );
 
   const overall = round(
     meanNumbers(Object.values(sources).map(item => item.reliability)),
@@ -1075,6 +1120,10 @@ function calculateValue(config, features, quality, reliability) {
   );
 
   const overall = features.overall_impression || {};
+  const overallImpressionMultiplier = Number(
+    config.reliability_engine_v2?.overall_impression_multiplier ??
+    0.25
+  );
   const overallReliability = clamp(
     meanNumbers([
       rel("skin"),
@@ -1087,7 +1136,7 @@ function calculateValue(config, features, quality, reliability) {
   used += addMapping(
     totals,
     cfg.mapping.overall_value?.[overall.dominant_value],
-    sw.overall_impression * 0.25 * overallReliability,
+    sw.overall_impression * overallImpressionMultiplier * overallReliability,
     clamp(overall.confidence),
     evidence,
     {
@@ -1122,7 +1171,7 @@ function calculateValue(config, features, quality, reliability) {
     sw.skin * rel("skin") +
     sw.hair * rel("hair") +
     sw.eyes * rel("eyes") +
-    sw.overall_impression * 0.25 * overallReliability;
+    sw.overall_impression * overallImpressionMultiplier * overallReliability;
 
   const originalMinimum =
     Number(cfg.global_rules.minimum_total_evidence_weight) || 0.35;
@@ -1335,6 +1384,10 @@ function calculateChroma(config, features, quality, reliability) {
   }
 
   const overall = features.overall_impression || {};
+  const overallImpressionMultiplier = Number(
+    config.reliability_engine_v2?.overall_impression_multiplier ??
+    0.25
+  );
   const overallReliability = clamp(
     meanNumbers([
       reliabilityOf("skin"),
@@ -1380,7 +1433,7 @@ function calculateChroma(config, features, quality, reliability) {
     Number(sw.contrast || 0) *
       reliabilityOf("contrast") +
     Number(sw.overall_impression || 0) *
-      0.25 *
+      overallImpressionMultiplier *
       overallReliability;
 
   const originalMinimum =
@@ -1552,7 +1605,7 @@ function calculateContrast(config, features, quality, reliability) {
         3
       )
     },
-    hairNaturalnessMultiplier
+    1
   );
 
   const skinEyeReliability = combinedReliability([
@@ -1614,6 +1667,10 @@ function calculateContrast(config, features, quality, reliability) {
   );
 
   const overall = features.overall_impression || {};
+  const overallImpressionMultiplier = Number(
+    config.reliability_engine_v2?.overall_impression_multiplier ??
+    0.25
+  );
 
   const overallReliability = clamp(
     meanNumbers([
@@ -1630,7 +1687,8 @@ function calculateContrast(config, features, quality, reliability) {
     cfg.mapping.overall_contrast?.[
       overall.dominant_contrast
     ],
-    Number(sw.overall_impression || 0),
+    Number(sw.overall_impression || 0) *
+      overallImpressionMultiplier,
     clamp(overall.confidence),
     overallReliability,
     {
@@ -1665,7 +1723,7 @@ function calculateContrast(config, features, quality, reliability) {
     Number(sw.iris_contrast || 0) *
       eyeReliability +
     Number(sw.overall_impression || 0) *
-      0.25 *
+      overallImpressionMultiplier *
       overallReliability;
 
   const originalMinimum =
@@ -2166,7 +2224,18 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
       );
     });
 
-    return values.reduce((a, b) => a + b, 0) / values.length;
+    const rawConsistency =
+      values.reduce((a, b) => a + b, 0) /
+      values.length;
+
+    const maximumConsistency = Number(
+      settings.maximum_consistency_score ?? 0.95
+    );
+
+    return Math.min(
+      maximumConsistency,
+      rawConsistency
+    );
   }
 
   const gapPoints =
@@ -2430,7 +2499,7 @@ function runScoring(config,dims,quality,features) {
 const {config,files}=await loadConfig();
 assert(config.engine&&config.temperature_engine&&config.value_engine&&config.chroma_engine&&config.contrast_engine&&config.season_scoring,"configuration incomplete");
 const adapted=adaptExtractor(extractor);
-const evidenceReliability=calculateEvidenceReliability(extractor,adapted);
+const evidenceReliability=calculateEvidenceReliability(extractor,adapted,config);
 if(!adapted.quality.continue_analysis){return{ok:true,stage:"completed",runtime_version:ENGINE_RUNTIME_VERSION,engine_version:config.engine.version,quality:adapted.quality,evidence_reliability:evidenceReliability,dimension_results:{},season_ranking:[],result:{best_match:null,second_match:null,third_match:null,confidence:0,confidence_percent:0,confidence_level:"insufficient",request_better_photo:true}};}
 const dims={
   temperature:calculateTemperature(
