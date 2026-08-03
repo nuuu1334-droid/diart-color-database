@@ -1,7 +1,7 @@
 {
   "project": "DiArt",
   "package": "Color Engine modular configuration",
-  "version": "2.1",
+  "version": "5.0.0",
   "entrypoint": "engine.json",
   "modules": {
     "quality": "quality.json",
@@ -14,7 +14,8 @@
     "confusion_resolution": "confusion_resolution.json",
     "season_selection": "season_selection.json",
     "confidence": "confidence.json",
-    "exclusions": "exclusions.json"
+    "exclusions": "exclusions.json",
+    "evidence_reliability": "evidence_reliability.json"
   },
   "integrity": {
     "source_top_level_key_count": 25,

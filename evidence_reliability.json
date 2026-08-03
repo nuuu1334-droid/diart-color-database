@@ -1,0 +1,106 @@
+{
+  "evidence_reliability_engine": {
+    "version": "1.0.0",
+    "minimum_multiplier": 0.15,
+    "quality_factors": {
+      "good": 1.0,
+      "acceptable": 0.86,
+      "poor": 0.35,
+      "unusable": 0.0
+    },
+    "lighting_factors": {
+      "neutral": 1.0,
+      "mostly_neutral": 0.94,
+      "mixed": 0.78,
+      "warm": 0.72,
+      "cool": 0.72,
+      "poor": 0.35
+    },
+    "color_cast_factors": {
+      "none": 1.0,
+      "slight_warm": 0.9,
+      "slight_cool": 0.9,
+      "mixed": 0.78,
+      "green": 0.72,
+      "magenta": 0.72,
+      "strong_warm": 0.58,
+      "strong_cool": 0.58
+    },
+    "source_rules": {
+      "skin": {
+        "base": 1.0,
+        "heavy_makeup": 0.68,
+        "beauty_filter": 0.62,
+        "strong_shadows": 0.78,
+        "overexposure": 0.62,
+        "underexposure": 0.65
+      },
+      "eyes": {
+        "base": 0.94,
+        "heavy_makeup": 0.82,
+        "beauty_filter": 0.68,
+        "strong_shadows": 0.7,
+        "overexposure": 0.7,
+        "underexposure": 0.62
+      },
+      "hair": {
+        "base": 0.88,
+        "likely_natural": 1.0,
+        "possibly_colored": 0.58,
+        "likely_colored": 0.22,
+        "unclear": 0.45,
+        "strong_shadows": 0.72,
+        "overexposure": 0.78,
+        "underexposure": 0.62
+      },
+      "lips": {
+        "base": 0.72,
+        "heavy_makeup": 0.18,
+        "beauty_filter": 0.55,
+        "strong_shadows": 0.75
+      },
+      "eyebrows": {
+        "base": 0.66,
+        "heavy_makeup": 0.72,
+        "beauty_filter": 0.6,
+        "strong_shadows": 0.7
+      },
+      "contrast": {
+        "base": 0.92,
+        "beauty_filter": 0.72,
+        "strong_shadows": 0.66,
+        "overexposure": 0.68,
+        "underexposure": 0.62
+      }
+    },
+    "dimension_source_mix": {
+      "temperature": {
+        "skin": 0.5,
+        "lips": 0.15,
+        "eyes": 0.15,
+        "hair": 0.1,
+        "eyebrows": 0.05,
+        "overall": 0.05
+      },
+      "value": {
+        "skin": 0.36,
+        "hair": 0.25,
+        "eyes": 0.19,
+        "overall": 0.2
+      },
+      "chroma": {
+        "skin": 0.3,
+        "eyes": 0.28,
+        "hair": 0.14,
+        "contrast": 0.13,
+        "overall": 0.15
+      },
+      "contrast": {
+        "contrast": 0.6,
+        "eyes": 0.15,
+        "hair": 0.1,
+        "overall": 0.15
+      }
+    }
+  }
+}
