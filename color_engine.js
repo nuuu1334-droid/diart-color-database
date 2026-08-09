@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.1
+ * DiArt Color Engine v4.9.2
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.1";
+const ENGINE_RUNTIME_VERSION = "4.9.2";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1030,6 +1030,119 @@ function calculateTemperature(config, features, quality, reliability) {
   };
 }
 
+function stabilizeTemperatureResult(result, extractorData) {
+  if (!result || typeof result !== "object") return result;
+
+  const vf = extractorData?.visual_features || {};
+  const oc = extractorData?.observed_colors || {};
+  const overall = extractorData?.overall_impression || {};
+
+  const skin = vf.skin_temperature || {};
+  const eyes = vf.eye_temperature || {};
+  const hair = vf.hair_temperature || {};
+
+  const skinValue = skin.value || oc.skin?.undertone_observation;
+  const eyeValue = eyes.value || oc.eyes?.temperature_observation;
+  const hairValue = hair.value || oc.hair?.temperature_observation;
+
+  const skinScore = Number(skin.score);
+  const eyeScore = Number(eyes.score);
+
+  const neutralDirectionalSkin =
+    ["neutral_warm", "neutral_cool"].includes(skinValue) &&
+    Number.isFinite(skinScore) &&
+    Math.abs(skinScore) <= 0.30;
+
+  const oppositeEye =
+    (skinValue === "neutral_cool" &&
+      ["neutral_warm", "warm"].includes(eyeValue)) ||
+    (skinValue === "neutral_warm" &&
+      ["neutral_cool", "cool"].includes(eyeValue));
+
+  const neutralHair =
+    ["neutral", "uncertain", "unclear", undefined, null].includes(hairValue);
+
+  const neutralOverall =
+    ["neutral", "uncertain", "unclear", undefined, null].includes(
+      overall.dominant_temperature
+    );
+
+  const neutralSkinFamily =
+    ["beige_neutral", "unclear", undefined, null].includes(
+      oc.skin?.undertone_family
+    );
+
+  const rednessCanDistort =
+    ["moderate", "high"].includes(oc.skin?.redness_level);
+
+  const directionalScoresConflict =
+    Number.isFinite(skinScore) &&
+    Number.isFinite(eyeScore) &&
+    Math.sign(skinScore) !== 0 &&
+    Math.sign(eyeScore) !== 0 &&
+    Math.sign(skinScore) !== Math.sign(eyeScore);
+
+  const conflicts = Array.isArray(result.conflicts)
+    ? [...result.conflicts]
+    : [];
+
+  if (oppositeEye) {
+    conflicts.push({
+      type: "skin_eye_temperature_conflict",
+      skin: skinValue,
+      eyes: eyeValue
+    });
+  }
+
+  if (directionalScoresConflict) {
+    conflicts.push({
+      type: "skin_eye_temperature_score_conflict",
+      skin_score: round(skinScore, 3),
+      eye_score: round(eyeScore, 3)
+    });
+  }
+
+  const shouldNeutralizeSingleSkinFlip =
+    neutralDirectionalSkin &&
+    neutralSkinFamily &&
+    neutralHair &&
+    neutralOverall &&
+    (oppositeEye || directionalScoresConflict || rednessCanDistort);
+
+  if (shouldNeutralizeSingleSkinFlip) {
+    conflicts.push({
+      type: "single_skin_temperature_flip_guard",
+      original_classification: result.classification,
+      stabilized_classification: "neutral",
+      reason: "Weak directional skin signal is not independently confirmed."
+    });
+
+    return {
+      ...result,
+      classification: "neutral",
+      confidence: round(
+        Math.min(Number(result.confidence || 0), 0.62),
+        3
+      ),
+      conflicts,
+      stability_guard: {
+        applied: true,
+        version: "4.9.2",
+        reason: "single_skin_temperature_flip"
+      }
+    };
+  }
+
+  return {
+    ...result,
+    conflicts,
+    stability_guard: {
+      applied: false,
+      version: "4.9.2"
+    }
+  };
+}
+
 function calculateValue(config, features, quality, reliability) {
   const cfg = config.value_engine;
   const totals = { light: 0, medium: 0, deep: 0 };
@@ -1997,11 +2110,39 @@ function baseScore(config, profile, dims) {
     effectiveAvailableWeight += effectiveWeight;
   }
 
-  const score =
+  let score =
     denominator > 0 &&
     availableWeight >= minAvailableWeight
       ? round(100 * numerator / denominator, 1)
       : 0;
+
+  let uncertainOppositePenalty = 0;
+
+  for (const item of Object.values(breakdown)) {
+    if (
+      item.classification_was_uncertain &&
+      item.usable &&
+      Number(item.match_value) === 0 &&
+      Number(item.confidence) >= minConf &&
+      Number(item.score_separation) >= 0.15
+    ) {
+      const penalty =
+        Number(item.base_weight || 0) *
+        100 *
+        Number(item.confidence || 0) *
+        0.70;
+
+      uncertainOppositePenalty += penalty;
+      item.uncertain_opposite_penalty = round(penalty, 1);
+    }
+  }
+
+  if (uncertainOppositePenalty > 0) {
+    score = round(
+      clamp(score - uncertainOppositePenalty, 0, 100),
+      1
+    );
+  }
 
   return {
     score,
@@ -2151,9 +2292,9 @@ function applyExclusions(config,scores,dims,features) {
 function resolveConfusion(config,ranking,dims,features) {
   if(ranking.length<2)return{triggered:false,unresolved:false,winner:null}; const [a,b]=ranking, gap=Math.abs(a.score_after_modifiers-b.score_after_modifiers); if(gap>config.confusion_resolution.trigger.top_two_score_gap_max)return{triggered:false,unresolved:false,winner:null};
   let pairId=null,rule=null; for(const [k,r] of Object.entries(config.confusion_resolution.rules||{})) if(new Set([r.candidate_a,r.candidate_b]).size===new Set([a.season_id,b.season_id]).size&&[r.candidate_a,r.candidate_b].includes(a.season_id)&&[r.candidate_a,r.candidate_b].includes(b.season_id)){pairId=k;rule=r;break;}
-  if(!rule)return{triggered:true,pair_id:null,winner:a.season_id,decision_margin:0,unresolved:true,applied_evidence:[]}; const points={[rule.candidate_a]:0,[rule.candidate_b]:0}, evidence=[];
+  if(!rule)return{triggered:true,pair_id:null,winner:null,decision_margin:0,unresolved:true,applied_evidence:[],reason:"no_specific_confusion_rule"}; const points={[rule.candidate_a]:0,[rule.candidate_b]:0}, evidence=[];
   for(const [side,candidate] of [["evidence_for_a",rule.candidate_a],["evidence_for_b",rule.candidate_b]]) for(const item of rule[side]||[]) if(conditionMatches(item.condition,dims,features)){points[candidate]+=Number(item.points);evidence.push({candidate,...item});}
-  const margin=Math.abs(points[rule.candidate_a]-points[rule.candidate_b]), min=config.confusion_resolution.generic_neighbor_rule.minimum_decision_margin; if(margin<min)return{triggered:true,pair_id:pairId,winner:a.season_id,decision_margin:margin,unresolved:true,applied_evidence:evidence};
+  const margin=Math.abs(points[rule.candidate_a]-points[rule.candidate_b]), min=config.confusion_resolution.generic_neighbor_rule.minimum_decision_margin; if(margin<min)return{triggered:true,pair_id:pairId,winner:null,decision_margin:margin,unresolved:true,applied_evidence:evidence,reason:"decision_margin_below_minimum"};
   const winner=points[rule.candidate_a]>points[rule.candidate_b]?rule.candidate_a:rule.candidate_b; return{triggered:true,pair_id:pairId,winner,decision_margin:margin,unresolved:false,applied_evidence:evidence};
 }
 function finalConfidence(config,dims,ranking,quality,confusion) {
@@ -2427,10 +2568,16 @@ function runScoring(config,dims,quality,features) {
   const requestBetterPhoto=
     quality==="poor" ||
     usableDimensions<2 ||
-    conf.level==="very_low";
+    conf.level==="very_low" ||
+    confusion.unresolved;
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
+    stability_fix_version: "4.9.2",
+    temperature_conflicts:
+      Array.isArray(dims.temperature?.conflicts)
+        ? dims.temperature.conflicts
+        : [],
     formula:
       "base_weight × dimension_confidence × reliability_coverage × score_separation_factor × classification_factor",
     uncertain_dimension_factor: Number(
@@ -2527,6 +2674,11 @@ const dims={
     evidenceReliability
   )
 };
+dims.temperature = stabilizeTemperatureResult(
+  dims.temperature,
+  extractor
+);
+
 const decision=runScoring(
   config,
   dims,
