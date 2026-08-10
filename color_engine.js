@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.7
+ * DiArt Color Engine v4.9.8
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.7";
+const ENGINE_RUNTIME_VERSION = "4.9.8";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1159,13 +1159,13 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.7",
+        version: "4.9.8",
         reason: "single_skin_temperature_flip"
       }
     };
   }
 
-  // v4.9.7: contradictory skin/eye temperature evidence must reduce
+  // v4.9.8: contradictory skin/eye temperature evidence must reduce
   // certainty even when the directional winner remains the same.
   // This prevents neutral-warm / neutral-cool borderline cases from
   // behaving like fully separated warm/cool observations in season scoring.
@@ -1221,7 +1221,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.7",
+        version: "4.9.8",
         reason: "skin_eye_temperature_conflict_confidence_guard",
         classification_preserved: result.classification
       }
@@ -1233,7 +1233,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.7"
+      version: "4.9.8"
     }
   };
 }
@@ -2541,9 +2541,25 @@ function baseScore(config, profile, dims, seasonId) {
 
     if (values.length < 2) return 0;
 
-    return clamp(
+    const rawSeparation = clamp(
       Math.max(0, values[0] - values[1]) / 20
     );
+
+    // v4.9.8: stability/reliability guards may intentionally cap
+    // score separation (e.g. opposing skin vs eye temperature).
+    // Season scoring must respect that cap instead of recomputing
+    // full separation from the unchanged raw score array.
+    const reliabilitySeparation = Number(
+      result?.reliability?.score_separation
+    );
+
+    if (Number.isFinite(reliabilitySeparation)) {
+      return clamp(
+        Math.min(rawSeparation, reliabilitySeparation)
+      );
+    }
+
+    return rawSeparation;
   }
 
   for (const [dimension, rawWeight] of Object.entries(weights)) {
@@ -3319,13 +3335,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.7",
+    stability_fix_version: "4.9.8",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.7 + skin-eye conflict confidence guard + calibrated core guards",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.8 + season scoring respects reliability score-separation caps + calibrated core guards",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
