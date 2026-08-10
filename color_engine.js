@@ -26,7 +26,7 @@
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.3";
+const ENGINE_RUNTIME_VERSION = "4.9.4";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1152,7 +1152,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       conflicts,
       stability_guard: {
         applied: true,
-        version: "4.9.3",
+        version: "4.9.4",
         reason: "single_skin_temperature_flip"
       }
     };
@@ -1163,7 +1163,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.3"
+      version: "4.9.4"
     }
   };
 }
@@ -1257,6 +1257,55 @@ function calculateValue(config, features, quality, reliability) {
     }
   );
 
+  // v4.9.4: eyebrows are a small reinforcement of the facial value frame.
+  // They must never outweigh skin/hair/eyes, but darker brows can confirm
+  // medium-deep/deep framing that would otherwise be lost.
+  const eyebrows = features.eyebrows || {};
+  const eyebrowWeight = 0.06;
+  const hairDepthFamily = collapseDepth(hair.depth);
+  let eyebrowValueMapping = null;
+
+  if (eyebrows.visible && !isUnknown(eyebrows.depth_relative_to_hair)) {
+    if (hairDepthFamily === "deep") {
+      if (["same", "darker"].includes(eyebrows.depth_relative_to_hair)) {
+        eyebrowValueMapping = { deep: 1, medium: 0.25, light: 0 };
+      } else if (eyebrows.depth_relative_to_hair === "lighter") {
+        eyebrowValueMapping = { deep: 0.35, medium: 0.75, light: 0.10 };
+      }
+    } else if (hairDepthFamily === "medium") {
+      if (eyebrows.depth_relative_to_hair === "darker") {
+        eyebrowValueMapping = { deep: 0.70, medium: 0.65, light: 0 };
+      } else if (eyebrows.depth_relative_to_hair === "same") {
+        eyebrowValueMapping = { deep: 0.20, medium: 1, light: 0.10 };
+      } else if (eyebrows.depth_relative_to_hair === "lighter") {
+        eyebrowValueMapping = { deep: 0.05, medium: 0.75, light: 0.35 };
+      }
+    } else if (hairDepthFamily === "light") {
+      eyebrowValueMapping = eyebrows.depth_relative_to_hair === "darker"
+        ? { deep: 0.10, medium: 0.70, light: 0.50 }
+        : { deep: 0, medium: 0.25, light: 1 };
+    }
+  }
+
+  if (eyebrowValueMapping) {
+    used += addMapping(
+      totals,
+      eyebrowValueMapping,
+      eyebrowWeight * rel("eyebrows"),
+      clamp(eyebrows.confidence),
+      evidence,
+      {
+        source: "eyebrows",
+        field: "depth_relative_to_hair",
+        observed_value: eyebrows.depth_relative_to_hair,
+        hair_depth_family: hairDepthFamily,
+        base_source_weight: eyebrowWeight,
+        source_reliability: round(rel("eyebrows"), 3),
+        reliability_applied: true
+      }
+    );
+  }
+
   const overall = features.overall_impression || {};
   const overallImpressionMultiplier = Math.max(
     0.50,
@@ -1312,6 +1361,7 @@ function calculateValue(config, features, quality, reliability) {
     sw.skin * rel("skin") +
     sw.hair * rel("hair") +
     sw.eyes * rel("eyes") +
+    (eyebrowValueMapping ? eyebrowWeight * rel("eyebrows") : 0) +
     sw.overall_impression * overallImpressionMultiplier * overallReliability;
 
   const originalMinimum =
@@ -1359,6 +1409,7 @@ function calculateValue(config, features, quality, reliability) {
         skin: round(rel("skin"), 3),
         eyes: round(rel("eyes"), 3),
         hair: round(rel("hair"), 3),
+        eyebrows: round(rel("eyebrows"), 3),
         overall_impression: round(overallReliability, 3)
       }
     }
@@ -1430,8 +1481,8 @@ function calculateChroma(config, features, quality, reliability) {
   const skinConfidence = clamp(skin.confidence);
 
   for (const [field, section, subWeight] of [
-    ["clarity", "skin_clarity", 0.70],
-    ["surface_tone", "skin_surface_tone", 0.15],
+    ["clarity", "skin_clarity", 0.55],
+    ["surface_tone", "skin_surface_tone", 0.20],
     ["natural_blush", "skin_natural_blush", 0.15]
   ]) {
     used += addChromaEvidence(
@@ -1508,8 +1559,8 @@ function calculateChroma(config, features, quality, reliability) {
   const contrastConfidence = clamp(contrast.confidence);
 
   for (const [field, section, subWeight] of [
-    ["feature_definition", "feature_definition", 0.70],
-    ["overall_contrast", "overall_contrast", 0.30]
+    ["feature_definition", "feature_definition", 0.45],
+    ["overall_contrast", "overall_contrast", 0.35]
   ]) {
     used += addChromaEvidence(
       "contrast",
@@ -1525,9 +1576,18 @@ function calculateChroma(config, features, quality, reliability) {
   }
 
   const overall = features.overall_impression || {};
-  const overallImpressionMultiplier = Number(
-    config.reliability_engine_v2?.overall_impression_multiplier ??
-    0.25
+  // v4.9.4: overall chroma is derivative evidence, not an independent
+  // full-strength source. Cap it to prevent skin clarity / feature definition
+  // from being counted again through the overall impression.
+  const overallImpressionMultiplier = Math.min(
+    0.18,
+    Math.max(
+      0.10,
+      Number(
+        config.reliability_engine_v2?.overall_impression_multiplier ??
+        0.15
+      )
+    )
   );
   const overallReliability = clamp(
     meanNumbers([
@@ -1551,7 +1611,7 @@ function calculateChroma(config, features, quality, reliability) {
       field: "dominant_chroma",
       observed_value: overall.dominant_chroma
     },
-    overallReliability
+    overallReliability * overallImpressionMultiplier
   );
 
   const scores = normalizedScores(totals, used);
@@ -2045,7 +2105,22 @@ function coreTraitRule(seasonId) {
   return rules[seasonId] || null;
 }
 
-function coreTraitSupport(seasonId, dims) {
+function normalizedMass(scores, weightedTargets) {
+  const entries = Object.entries(scores || {})
+    .map(([name, score]) => [name, Math.max(0, Number(score) || 0)]);
+  const total = entries.reduce((sum, [, score]) => sum + score, 0);
+  if (total <= 0) return null;
+
+  const support = entries.reduce(
+    (sum, [name, score]) =>
+      sum + score * Number(weightedTargets[name] || 0),
+    0
+  ) / total;
+
+  return clamp(support);
+}
+
+function coreTraitSupport(seasonId, dims, features = {}) {
   const rule = coreTraitRule(seasonId);
   if (!rule) return null;
 
@@ -2064,7 +2139,8 @@ function coreTraitSupport(seasonId, dims) {
     return support === undefined ? null : {
       dimension: rule.dimension,
       support,
-      confidence
+      confidence,
+      mode: "temperature_family"
     };
   }
 
@@ -2079,7 +2155,76 @@ function coreTraitSupport(seasonId, dims) {
     return support === undefined ? null : {
       dimension: rule.dimension,
       support,
-      confidence
+      confidence,
+      mode: "temperature_family"
+    };
+  }
+
+  // Bright seasons require a combination of chroma AND contrast/definition.
+  // "Clear" alone is not enough to call the whole appearance Bright.
+  if (["bright_spring", "bright_winter"].includes(seasonId)) {
+    const chroma = dims?.chroma || {};
+    const contrast = dims?.contrast || {};
+
+    const chromaSupport = normalizedMass(chroma.scores, {
+      bright: 1.00,
+      clear: 0.65,
+      balanced: 0.25,
+      soft: 0.05,
+      muted: 0
+    });
+
+    const contrastSupport = normalizedMass(contrast.scores, {
+      high: 1.00,
+      medium: 0.35,
+      low: 0
+    });
+
+    const definitionSupport = ({
+      striking: 1.00,
+      defined: 0.80,
+      moderate: 0.35,
+      soft: 0.10,
+      unknown: 0.30
+    })[features?.contrast?.feature_definition] ?? 0.30;
+
+    if (chromaSupport === null || contrastSupport === null) return null;
+
+    return {
+      dimension: "chroma+contrast",
+      support: clamp(
+        0.60 * chromaSupport +
+        0.25 * contrastSupport +
+        0.15 * definitionSupport
+      ),
+      confidence: clamp(
+        0.60 * Number(chroma.confidence || 0) +
+        0.40 * Number(contrast.confidence || 0)
+      ),
+      mode: "bright_composite",
+      components: {
+        chroma: round(chromaSupport, 3),
+        contrast: round(contrastSupport, 3),
+        definition: round(definitionSupport, 3)
+      }
+    };
+  }
+
+  // Soft seasons treat Balanced as meaningful adjacent support rather than
+  // an opposite state. This prevents Balanced from being scored as ~zero Soft.
+  if (["soft_autumn", "soft_summer"].includes(seasonId)) {
+    const support = normalizedMass(result.scores, {
+      muted: 1.00,
+      soft: 1.00,
+      balanced: 0.65,
+      clear: 0.15,
+      bright: 0
+    });
+    return support === null ? null : {
+      dimension: "chroma",
+      support,
+      confidence,
+      mode: "soft_adjacent_balanced"
     };
   }
 
@@ -2100,10 +2245,22 @@ function coreTraitSupport(seasonId, dims) {
       0
     );
 
+    const support = clamp(targetMass / total);
+    const oppositeTarget = rule.target === "light"
+      ? "deep"
+      : rule.target === "deep"
+        ? "light"
+        : null;
+    const oppositeSupport = oppositeTarget
+      ? clamp(Math.max(0, Number(scores[oppositeTarget] || 0)) / total)
+      : null;
+
     return {
       dimension: rule.dimension,
-      support: clamp(targetMass / total),
-      confidence
+      support,
+      confidence,
+      mode: "target_mass",
+      opposite_support: oppositeSupport
     };
   }
 
@@ -2111,31 +2268,57 @@ function coreTraitSupport(seasonId, dims) {
     return {
       dimension: rule.dimension,
       support: targetSet.has(classification) ? 1 : 0,
-      confidence
+      confidence,
+      mode: "classification_fallback"
     };
   }
 
   return null;
 }
 
-function applyCoreTraitGuards(scores, dims) {
+function applyCoreTraitGuards(scores, dims, features = {}) {
   const adjusted = { ...scores };
   const applied = Object.fromEntries(
     Object.keys(scores).map(season => [season, []])
   );
 
   for (const season of Object.keys(adjusted)) {
-    const core = coreTraitSupport(season, dims);
+    const core = coreTraitSupport(season, dims, features);
     if (!core || core.confidence < 0.40) continue;
 
     let penalty = 0;
 
-    if (core.support < 0.12 && core.confidence >= 0.60) {
-      penalty = 22;
-    } else if (core.support < 0.25) {
-      penalty = 15;
-    } else if (core.support < 0.40) {
-      penalty = 8;
+    if (["bright_spring", "bright_winter"].includes(season)) {
+      // Bright is a demanding dominant trait; medium/balanced evidence alone
+      // should not leave Bright unpenalized.
+      if (core.support < 0.28 && core.confidence >= 0.60) {
+        penalty = 22;
+      } else if (core.support < 0.40) {
+        penalty = 15;
+      } else if (core.support < 0.50) {
+        penalty = 8;
+      }
+    } else if (["light_spring", "light_summer", "deep_autumn", "deep_winter"].includes(season)) {
+      const closeOpposite = Number.isFinite(Number(core.opposite_support)) &&
+        Math.abs(Number(core.support) - Number(core.opposite_support)) < 0.08;
+
+      if (core.support < 0.12 && core.confidence >= 0.60) {
+        penalty = 22;
+      } else if (core.support < 0.25) {
+        penalty = 15;
+      } else if (core.support < 0.40) {
+        penalty = closeOpposite ? 12 : 8;
+      } else if (core.support < 0.45 && closeOpposite) {
+        penalty = 8;
+      }
+    } else {
+      if (core.support < 0.12 && core.confidence >= 0.60) {
+        penalty = 22;
+      } else if (core.support < 0.25) {
+        penalty = 15;
+      } else if (core.support < 0.40) {
+        penalty = 8;
+      }
     }
 
     if (penalty <= 0) continue;
@@ -2152,6 +2335,11 @@ function applyCoreTraitGuards(scores, dims) {
       support: round(core.support, 3),
       confidence: round(core.confidence, 3),
       points: -penalty,
+      mode: core.mode,
+      components: core.components,
+      opposite_support: core.opposite_support === null || core.opposite_support === undefined
+        ? undefined
+        : round(core.opposite_support, 3),
       reason: "Primary seasonal characteristic is weakly supported by the observed evidence."
     });
   }
@@ -2747,7 +2935,7 @@ function runScoring(config,dims,quality,features) {
   const base = Object.fromEntries(
     Object.entries(baseDetails).map(([season, detail]) => [season, detail.score])
   );
-  const core = applyCoreTraitGuards(base, dims);
+  const core = applyCoreTraitGuards(base, dims, adapted.features);
   const cross = applyCrossRules(config, core.adjusted, dims);
   const excl = applyExclusions(config, cross.adjusted, dims, features);
   const ranking = Object.keys(profiles)
@@ -2808,13 +2996,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.3",
+    stability_fix_version: "4.9.4",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match + core_trait_guards",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match + calibrated_core_trait_guards",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
