@@ -26,7 +26,7 @@
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.4";
+const ENGINE_RUNTIME_VERSION = "4.9.5";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1152,7 +1152,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       conflicts,
       stability_guard: {
         applied: true,
-        version: "4.9.4",
+        version: "4.9.5",
         reason: "single_skin_temperature_flip"
       }
     };
@@ -1163,7 +1163,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.4"
+      version: "4.9.5"
     }
   };
 }
@@ -1646,12 +1646,24 @@ function calculateChroma(config, features, quality, reliability) {
         (adjustedAvailableWeight / originalTotalWeight)
       : originalMinimum;
 
+  const chromaMetrics = evidenceMetrics(
+    evidence,
+    adjustedAvailableWeight,
+    quality.overall_quality,
+    scores
+  );
+
   if (used >= adjustedMinimum && ordered.length >= 2) {
     const [firstName, firstScore] = ordered[0];
     const secondScore = ordered[1][1];
     const gap = firstScore - secondScore;
+    const lowCoverageCloseRace =
+      Number(chromaMetrics.coverage || 0) < 0.60 &&
+      gap < 10;
 
-    if (gap >= 6) {
+    if (lowCoverageCloseRace) {
+      classification = "uncertain";
+    } else if (gap >= 6) {
       classification = firstName;
     } else if (
       ["balanced", "soft", "muted"].includes(firstName) &&
@@ -1663,12 +1675,7 @@ function calculateChroma(config, features, quality, reliability) {
     }
   }
 
-  const metrics = evidenceMetrics(
-    evidence,
-    adjustedAvailableWeight,
-    quality.overall_quality,
-    scores
-  );
+  const metrics = chromaMetrics;
 
   const confidence = metrics.confidence;
 
@@ -2168,24 +2175,24 @@ function coreTraitSupport(seasonId, dims, features = {}) {
 
     const chromaSupport = normalizedMass(chroma.scores, {
       bright: 1.00,
-      clear: 0.65,
-      balanced: 0.25,
-      soft: 0.05,
+      clear: 0.50,
+      balanced: 0.15,
+      soft: 0.03,
       muted: 0
     });
 
     const contrastSupport = normalizedMass(contrast.scores, {
       high: 1.00,
-      medium: 0.35,
+      medium: 0.25,
       low: 0
     });
 
     const definitionSupport = ({
       striking: 1.00,
-      defined: 0.80,
-      moderate: 0.35,
-      soft: 0.10,
-      unknown: 0.30
+      defined: 0.65,
+      moderate: 0.30,
+      soft: 0.08,
+      unknown: 0.25
     })[features?.contrast?.feature_definition] ?? 0.30;
 
     if (chromaSupport === null || contrastSupport === null) return null;
@@ -2216,8 +2223,8 @@ function coreTraitSupport(seasonId, dims, features = {}) {
     const support = normalizedMass(result.scores, {
       muted: 1.00,
       soft: 1.00,
-      balanced: 0.65,
-      clear: 0.15,
+      balanced: 0.45,
+      clear: 0.10,
       bright: 0
     });
     return support === null ? null : {
@@ -2690,12 +2697,126 @@ function applyExclusions(config,scores,dims,features) {
   return {adjusted,hard,applied,hardReasons,scoreBefore};
 }
 function resolveConfusion(config,ranking,dims,features) {
-  if(ranking.length<2)return{triggered:false,unresolved:false,winner:null}; const [a,b]=ranking, gap=Math.abs(a.score_after_modifiers-b.score_after_modifiers); if(gap>config.confusion_resolution.trigger.top_two_score_gap_max)return{triggered:false,unresolved:false,winner:null};
-  let pairId=null,rule=null; for(const [k,r] of Object.entries(config.confusion_resolution.rules||{})) if(new Set([r.candidate_a,r.candidate_b]).size===new Set([a.season_id,b.season_id]).size&&[r.candidate_a,r.candidate_b].includes(a.season_id)&&[r.candidate_a,r.candidate_b].includes(b.season_id)){pairId=k;rule=r;break;}
-  if(!rule)return{triggered:true,pair_id:null,winner:null,decision_margin:0,unresolved:true,applied_evidence:[],reason:"no_specific_confusion_rule"}; const points={[rule.candidate_a]:0,[rule.candidate_b]:0}, evidence=[];
-  for(const [side,candidate] of [["evidence_for_a",rule.candidate_a],["evidence_for_b",rule.candidate_b]]) for(const item of rule[side]||[]) if(conditionMatches(item.condition,dims,features)){points[candidate]+=Number(item.points);evidence.push({candidate,...item});}
-  const margin=Math.abs(points[rule.candidate_a]-points[rule.candidate_b]), min=config.confusion_resolution.generic_neighbor_rule.minimum_decision_margin; if(margin<min)return{triggered:true,pair_id:pairId,winner:null,decision_margin:margin,unresolved:true,applied_evidence:evidence,reason:"decision_margin_below_minimum"};
-  const winner=points[rule.candidate_a]>points[rule.candidate_b]?rule.candidate_a:rule.candidate_b; return{triggered:true,pair_id:pairId,winner,decision_margin:margin,unresolved:false,applied_evidence:evidence};
+  if (ranking.length < 2) return { triggered:false, unresolved:false, winner:null };
+  const [a,b] = ranking;
+  const gap = Math.abs(a.score_after_modifiers - b.score_after_modifiers);
+  if (gap > config.confusion_resolution.trigger.top_two_score_gap_max) {
+    return { triggered:false, unresolved:false, winner:null };
+  }
+
+  const pair = new Set([a.season_id, b.season_id]);
+
+  // Built-in generic resolver for the warm "True" pair.
+  // It is deliberately season-pair based, not person-specific.
+  if (pair.has("true_spring") && pair.has("true_autumn")) {
+    const value = dims?.value?.scores || {};
+    const chroma = dims?.chroma?.scores || {};
+    const valueTotal = Object.values(value).reduce((s,v)=>s+Math.max(0,Number(v)||0),0);
+    const chromaTotal = Object.values(chroma).reduce((s,v)=>s+Math.max(0,Number(v)||0),0);
+
+    const valueSpring = valueTotal > 0
+      ? (Math.max(0,Number(value.light)||0) + 0.50*Math.max(0,Number(value.medium)||0)) / valueTotal
+      : 0;
+    const valueAutumn = valueTotal > 0
+      ? (Math.max(0,Number(value.deep)||0) + 0.60*Math.max(0,Number(value.medium)||0)) / valueTotal
+      : 0;
+
+    const chromaSpring = chromaTotal > 0
+      ? (
+          1.00*Math.max(0,Number(chroma.bright)||0) +
+          0.80*Math.max(0,Number(chroma.clear)||0) +
+          0.25*Math.max(0,Number(chroma.balanced)||0)
+        ) / chromaTotal
+      : 0;
+    const chromaAutumn = chromaTotal > 0
+      ? (
+          1.00*Math.max(0,Number(chroma.muted)||0) +
+          1.00*Math.max(0,Number(chroma.soft)||0) +
+          0.80*Math.max(0,Number(chroma.balanced)||0) +
+          0.25*Math.max(0,Number(chroma.clear)||0)
+        ) / chromaTotal
+      : 0;
+
+    let springPoints = 4*valueSpring + 4*chromaSpring;
+    let autumnPoints = 4*valueAutumn + 4*chromaAutumn;
+    const evidence = [
+      { candidate:"true_spring", type:"distribution_value", points:round(4*valueSpring,2), support:round(valueSpring,3) },
+      { candidate:"true_spring", type:"distribution_chroma", points:round(4*chromaSpring,2), support:round(chromaSpring,3) },
+      { candidate:"true_autumn", type:"distribution_value", points:round(4*valueAutumn,2), support:round(valueAutumn,3) },
+      { candidate:"true_autumn", type:"distribution_chroma", points:round(4*chromaAutumn,2), support:round(chromaAutumn,3) }
+    ];
+
+    const hairDepth = features?.hair?.depth;
+    if (["medium_deep","deep","very_deep"].includes(hairDepth)) {
+      autumnPoints += 2;
+      evidence.push({ candidate:"true_autumn", type:"hair_depth", points:2, observed:hairDepth });
+    } else if (["very_light","light","light_medium"].includes(hairDepth)) {
+      springPoints += 2;
+      evidence.push({ candidate:"true_spring", type:"hair_depth", points:2, observed:hairDepth });
+    }
+
+    if (features?.eyebrows?.depth_relative_to_hair === "darker") {
+      autumnPoints += 1;
+      evidence.push({ candidate:"true_autumn", type:"darker_eyebrows", points:1 });
+    }
+
+    const margin = Math.abs(springPoints - autumnPoints);
+    const minimum = Math.max(
+      1.25,
+      Number(config.confusion_resolution?.generic_neighbor_rule?.minimum_decision_margin || 0)
+    );
+
+    if (margin < minimum) {
+      return {
+        triggered:true,
+        pair_id:"true_spring_vs_true_autumn_builtin",
+        winner:null,
+        decision_margin:round(margin,2),
+        unresolved:true,
+        applied_evidence:evidence,
+        reason:"decision_margin_below_minimum"
+      };
+    }
+
+    return {
+      triggered:true,
+      pair_id:"true_spring_vs_true_autumn_builtin",
+      winner:springPoints > autumnPoints ? "true_spring" : "true_autumn",
+      decision_margin:round(margin,2),
+      unresolved:false,
+      applied_evidence:evidence,
+      points:{
+        true_spring:round(springPoints,2),
+        true_autumn:round(autumnPoints,2)
+      }
+    };
+  }
+
+  let pairId=null,rule=null;
+  for(const [k,r] of Object.entries(config.confusion_resolution.rules||{})) {
+    if(
+      new Set([r.candidate_a,r.candidate_b]).size===new Set([a.season_id,b.season_id]).size &&
+      [r.candidate_a,r.candidate_b].includes(a.season_id) &&
+      [r.candidate_a,r.candidate_b].includes(b.season_id)
+    ){
+      pairId=k; rule=r; break;
+    }
+  }
+  if(!rule)return{triggered:true,pair_id:null,winner:null,decision_margin:0,unresolved:true,applied_evidence:[],reason:"no_specific_confusion_rule"};
+  const points={[rule.candidate_a]:0,[rule.candidate_b]:0}, evidence=[];
+  for(const [side,candidate] of [["evidence_for_a",rule.candidate_a],["evidence_for_b",rule.candidate_b]]) {
+    for(const item of rule[side]||[]) {
+      if(conditionMatches(item.condition,dims,features)){
+        points[candidate]+=Number(item.points);
+        evidence.push({candidate,...item});
+      }
+    }
+  }
+  const margin=Math.abs(points[rule.candidate_a]-points[rule.candidate_b]);
+  const min=config.confusion_resolution.generic_neighbor_rule.minimum_decision_margin;
+  if(margin<min)return{triggered:true,pair_id:pairId,winner:null,decision_margin:margin,unresolved:true,applied_evidence:evidence,reason:"decision_margin_below_minimum"};
+  const winner=points[rule.candidate_a]>points[rule.candidate_b]?rule.candidate_a:rule.candidate_b;
+  return{triggered:true,pair_id:pairId,winner,decision_margin:margin,unresolved:false,applied_evidence:evidence};
 }
 function finalConfidence(config,dims,ranking,quality,confusion) {
   const settings = config.confidence_engine_v2 || {};
@@ -2781,8 +2902,7 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
 
   const gapPoints =
     ranking.length > 1
-      ? Math.max(
-          0,
+      ? Math.abs(
           Number(ranking[0].score_after_modifiers || 0) -
           Number(ranking[1].score_after_modifiers || 0)
         )
@@ -2872,6 +2992,58 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
     });
   }
 
+  const dimensions = dimensionEntries.map(
+    ([name, result]) => {
+      const confidence = clamp(Number(result.confidence || 0));
+      const coverage = clamp(Number(result.reliability?.coverage ?? 0));
+      const separation = clamp(Number(result.reliability?.score_separation ?? 0));
+      const strong =
+        !isUnknown(result?.classification) &&
+        confidence >= Number(settings.minimum_strong_confidence || 0.65) &&
+        coverage >= Number(settings.minimum_strong_coverage || 0.60) &&
+        separation >= Number(settings.minimum_strong_separation || 0.30);
+
+      return {
+        dimension: name,
+        classification: result.classification,
+        confidence: round(confidence, 3),
+        evidence_coverage: round(coverage, 3),
+        score_separation: round(separation, 3),
+        dimension_reliability: round(
+          Number(result.reliability?.dimension_reliability ?? 1),
+          3
+        ),
+        usable: usableDimension(result),
+        strong
+      };
+    }
+  );
+
+  const temperatureConflictCount = Array.isArray(dims?.temperature?.conflicts)
+    ? dims.temperature.conflicts.length
+    : 0;
+
+  if (temperatureConflictCount > 0) {
+    const penalty = Math.min(0.06, 0.025 * temperatureConflictCount);
+    finalScore -= penalty;
+    penalties.push({
+      type: "temperature_evidence_conflict",
+      value: -round(penalty, 3),
+      conflict_count: temperatureConflictCount
+    });
+  }
+
+  const strongCount = dimensions.filter(x => x.strong).length;
+  if (strongCount < 3 && dimensions.filter(x => x.usable).length >= 3) {
+    const penalty = strongCount <= 1 ? 0.05 : 0.03;
+    finalScore -= penalty;
+    penalties.push({
+      type: "limited_strong_dimensions",
+      value: -penalty,
+      strong_dimensions: strongCount
+    });
+  }
+
   finalScore = clamp(finalScore);
 
   const levels = settings.levels || {
@@ -2887,27 +3059,6 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
     finalScore >= Number(levels.medium) ? "medium" :
     finalScore >= Number(levels.low) ? "low" :
     "very_low";
-
-  const dimensions = dimensionEntries.map(
-    ([name, result]) => ({
-      dimension: name,
-      classification: result.classification,
-      confidence: round(Number(result.confidence || 0), 3),
-      evidence_coverage: round(
-        Number(result.reliability?.coverage ?? 0),
-        3
-      ),
-      dimension_reliability: round(
-        Number(result.reliability?.dimension_reliability ?? 1),
-        3
-      ),
-      usable: usableDimension(result),
-      strong:
-        !isUnknown(result?.classification) &&
-        Number(result.confidence || 0) >=
-          Number(settings.minimum_strong_confidence || 0.45)
-    })
-  );
 
   return {
     version: "2.1",
@@ -2996,13 +3147,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.4",
+    stability_fix_version: "4.9.5",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match + calibrated_core_trait_guards",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match + calibrated_core_trait_guards_v4_9_5",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
