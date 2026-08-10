@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.6
+ * DiArt Color Engine v4.9.7
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.6";
+const ENGINE_RUNTIME_VERSION = "4.9.7";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1150,10 +1150,80 @@ function stabilizeTemperatureResult(result, extractorData) {
         3
       ),
       conflicts,
+      reliability: {
+        ...(result.reliability || {}),
+        score_separation: round(
+          Math.min(Number(result.reliability?.score_separation ?? 0), 0.55),
+          3
+        )
+      },
       stability_guard: {
         applied: true,
-        version: "4.9.5",
+        version: "4.9.7",
         reason: "single_skin_temperature_flip"
+      }
+    };
+  }
+
+  // v4.9.7: contradictory skin/eye temperature evidence must reduce
+  // certainty even when the directional winner remains the same.
+  // This prevents neutral-warm / neutral-cool borderline cases from
+  // behaving like fully separated warm/cool observations in season scoring.
+  const hasSkinEyeConflict = oppositeEye || directionalScoresConflict;
+
+  if (hasSkinEyeConflict) {
+    const skinMagnitude = Number.isFinite(skinScore)
+      ? Math.min(1, Math.abs(skinScore) / 0.5)
+      : 0.5;
+    const eyeMagnitude = Number.isFinite(eyeScore)
+      ? Math.min(1, Math.abs(eyeScore) / 0.5)
+      : 0.5;
+
+    // Conflict strength is highest when both observations are directional.
+    const conflictStrength = clamp(
+      0.55 + 0.225 * skinMagnitude + 0.225 * eyeMagnitude,
+      0.55,
+      1
+    );
+
+    const confidenceCap = 0.72 - 0.08 * conflictStrength;
+    const separationCap = 0.76 - 0.16 * conflictStrength;
+
+    conflicts.push({
+      type: "temperature_conflict_confidence_guard",
+      conflict_strength: round(conflictStrength, 3),
+      confidence_before: round(Number(result.confidence || 0), 3),
+      confidence_cap: round(confidenceCap, 3),
+      score_separation_before: round(
+        Number(result.reliability?.score_separation ?? 0),
+        3
+      ),
+      score_separation_cap: round(separationCap, 3),
+      reason: "Opposing skin and eye temperature evidence lowers directional certainty."
+    });
+
+    return {
+      ...result,
+      confidence: round(
+        Math.min(Number(result.confidence || 0), confidenceCap),
+        3
+      ),
+      conflicts,
+      reliability: {
+        ...(result.reliability || {}),
+        score_separation: round(
+          Math.min(
+            Number(result.reliability?.score_separation ?? 0),
+            separationCap
+          ),
+          3
+        )
+      },
+      stability_guard: {
+        applied: true,
+        version: "4.9.7",
+        reason: "skin_eye_temperature_conflict_confidence_guard",
+        classification_preserved: result.classification
       }
     };
   }
@@ -1163,7 +1233,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.5"
+      version: "4.9.7"
     }
   };
 }
@@ -3249,13 +3319,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.6",
+    stability_fix_version: "4.9.7",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.6 + calibrated core guards",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.7 + skin-eye conflict confidence guard + calibrated core guards",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
