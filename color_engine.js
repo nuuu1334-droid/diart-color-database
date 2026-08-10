@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.3
+ * DiArt Color Engine v4.9.6
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.5";
+const ENGINE_RUNTIME_VERSION = "4.9.6";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -2059,7 +2059,90 @@ function matchValue(config, dimension, observed, profile) {
   return Number(mp.opposite_value ?? 0);
 }
 
-function distributionMatchValue(config, dimension, result, profile) {
+function temperatureSeasonFamily(seasonId) {
+  const families = {
+    true_spring: "true_warm",
+    true_autumn: "true_warm",
+
+    light_spring: "neutral_warm",
+    bright_spring: "neutral_warm",
+    soft_autumn: "neutral_warm",
+    deep_autumn: "neutral_warm",
+
+    light_summer: "neutral_cool",
+    bright_winter: "neutral_cool",
+    soft_summer: "neutral_cool",
+    deep_winter: "neutral_cool",
+
+    true_summer: "true_cool",
+    true_winter: "true_cool"
+  };
+
+  return families[seasonId] || null;
+}
+
+function temperatureDistributionMatchValue(result, seasonId) {
+  const family = temperatureSeasonFamily(seasonId);
+  if (!family) return null;
+
+  const scores = result?.scores || {};
+  const warm = Math.max(0, Number(scores.warm) || 0);
+  const neutral = Math.max(0, Number(scores.neutral) || 0);
+  const cool = Math.max(0, Number(scores.cool) || 0);
+  const total = warm + neutral + cool;
+
+  if (total <= 0) return null;
+
+  /*
+   * v4.9.6:
+   * Temperature is scored continuously from the raw evidence vector instead
+   * of the old categorical 1 / 0.75 / 0.4 / 0 ladder.
+   *
+   * The four seasonal temperature families intentionally overlap:
+   * - True Warm / True Cool prefer a clear direction.
+   * - Neutral-Warm / Neutral-Cool accept a meaningful opposite-side signal,
+   *   which keeps Light Spring <-> Light Summer and the other neutral pairs
+   *   connected rather than creating artificial cliffs.
+   */
+  const compatibility = {
+    true_warm: {
+      warm: 1.00,
+      neutral: 0.50,
+      cool: 0.05
+    },
+    neutral_warm: {
+      warm: 0.95,
+      neutral: 1.00,
+      cool: 0.20
+    },
+    neutral_cool: {
+      warm: 0.20,
+      neutral: 1.00,
+      cool: 0.95
+    },
+    true_cool: {
+      warm: 0.05,
+      neutral: 0.50,
+      cool: 1.00
+    }
+  }[family];
+
+  const expected =
+    (warm / total) * compatibility.warm +
+    (neutral / total) * compatibility.neutral +
+    (cool / total) * compatibility.cool;
+
+  return round(clamp(expected), 4);
+}
+
+function distributionMatchValue(config, dimension, result, profile, seasonId) {
+  if (dimension === "temperature") {
+    return temperatureDistributionMatchValue(
+      result,
+      seasonId
+    );
+  }
+
   if (!["value", "chroma", "contrast"].includes(dimension)) {
     return null;
   }
@@ -2354,7 +2437,7 @@ function applyCoreTraitGuards(scores, dims, features = {}) {
   return { adjusted, applied };
 }
 
-function baseScore(config, profile, dims) {
+function baseScore(config, profile, dims, seasonId) {
   const weights = getDimensionWeights(config);
 
   const minConf = Number(
@@ -2413,7 +2496,8 @@ function baseScore(config, profile, dims) {
       config,
       dimension,
       result,
-      profile
+      profile,
+      seasonId
     );
 
     const match =
@@ -2499,7 +2583,11 @@ function baseScore(config, profile, dims) {
       match_value: match,
       match_mode:
         distributionMatch !== null
-          ? "score_distribution"
+          ? (
+              dimension === "temperature"
+                ? "temperature_score_distribution"
+                : "score_distribution"
+            )
           : "classification",
       weighted_match_contribution:
         usable
@@ -3081,7 +3169,7 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
 function runScoring(config,dims,quality,features) {
   const profiles = config.season_scoring.season_profiles;
   const baseDetails = Object.fromEntries(
-    Object.entries(profiles).map(([season, profile]) => [season, baseScore(config, profile, dims)])
+    Object.entries(profiles).map(([season, profile]) => [season, baseScore(config, profile, dims, season)])
   );
   const base = Object.fromEntries(
     Object.entries(baseDetails).map(([season, detail]) => [season, detail.score])
@@ -3132,10 +3220,20 @@ function runScoring(config,dims,quality,features) {
     best.score_after_modifiers<40 ||
     usableDimensions===0;
 
+  const resolvedConfusionStillClose =
+    Boolean(
+      confusion?.triggered &&
+      !confusion?.unresolved &&
+      confusion?.winner &&
+      Number(confusion?.decision_margin || 0) < 4 &&
+      Number(conf?.score || 0) < 0.65
+    );
+
   const provisional=
     !noResult && (
       ["very_low","low"].includes(conf.level) ||
       confusion.unresolved ||
+      resolvedConfusionStillClose ||
       usableDimensions<3
     );
 
@@ -3143,17 +3241,21 @@ function runScoring(config,dims,quality,features) {
     quality==="poor" ||
     usableDimensions<2 ||
     conf.level==="very_low" ||
-    confusion.unresolved;
+    confusion.unresolved ||
+    (
+      resolvedConfusionStillClose &&
+      Number(conf?.score || 0) < 0.60
+    );
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.5",
+    stability_fix_version: "4.9.6",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match + calibrated_core_trait_guards_v4_9_5",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.6 + calibrated core guards",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
@@ -3210,7 +3312,11 @@ function runScoring(config,dims,quality,features) {
         penalties:conf.penalties
       },
       score_gap_to_second:noResult||!ranking[1]?null:round(
-        ranking[0].score_after_modifiers-ranking[1].score_after_modifiers,1
+        Math.abs(
+          ranking[0].score_after_modifiers -
+          ranking[1].score_after_modifiers
+        ),
+        1
       ),
       request_better_photo:noResult||requestBetterPhoto
     }
