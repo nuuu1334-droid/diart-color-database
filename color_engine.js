@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.2
+ * DiArt Color Engine v4.9.3
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.2";
+const ENGINE_RUNTIME_VERSION = "4.9.3";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -159,6 +159,16 @@ function majority(items, fallback = "uncertain") {
   return ordered[0]?.[0] || fallback;
 }
 
+function orderedMedian(items, order, fallback = "uncertain") {
+  const index = new Map(order.map((value, i) => [value, i]));
+  const known = items
+    .filter(value => index.has(value))
+    .sort((a, b) => index.get(a) - index.get(b));
+
+  if (!known.length) return fallback;
+  return known[Math.floor(known.length / 2)];
+}
+
 function adaptExtractor(ex) {
   assert(ex && typeof ex === "object", "extractor missing");
   const vf = ex.visual_features || {};
@@ -215,7 +225,11 @@ function adaptExtractor(ex) {
         temperature: eyeTemp,
         clarity: normalizeClarity(eyeChroma),
         brightness: brightnessFromDepth(eyeDepth),
-        iris_contrast: collapseContrast(cf.skin_eye_value_difference?.level),
+        iris_contrast: collapseContrast(
+          oc.eyes?.iris_contrast ||
+          cf.iris_contrast?.level ||
+          cf.skin_eye_value_difference?.level
+        ),
         limbal_ring: "unknown",
         golden_flecks: "unknown",
         cool_gray_veil: String(oc.eyes?.secondary_color || "").includes("gray") ? "visible" : "unknown",
@@ -238,8 +252,11 @@ function adaptExtractor(ex) {
       },
       eyebrows: {
         visible:
+          oc.eyebrows?.visible === true ||
           Boolean(oc.eyebrows?.primary_color) ||
-          Boolean(oc.eyebrows?.hex),
+          Boolean(oc.eyebrows?.hex) ||
+          Boolean(oc.eyebrows?.depth_relative_to_hair) ||
+          Boolean(oc.eyebrows?.temperature_observation),
         depth_relative_to_hair:
           oc.eyebrows?.depth_relative_to_hair || "unknown",
         temperature:
@@ -251,10 +268,15 @@ function adaptExtractor(ex) {
       },
       lips: {
         visible:
+          oc.lips?.visible === true ||
           Boolean(oc.lips?.primary_color) ||
-          Boolean(oc.lips?.hex),
+          Boolean(oc.lips?.natural_color) ||
+          Boolean(oc.lips?.hex) ||
+          Boolean(oc.lips?.temperature_observation),
         natural_color:
-          oc.lips?.primary_color || "unknown",
+          oc.lips?.primary_color ||
+          oc.lips?.natural_color ||
+          "unknown",
         temperature:
           oc.lips?.temperature_observation || "uncertain",
         depth:
@@ -273,7 +295,10 @@ function adaptExtractor(ex) {
       },
       overall_impression: {
         dominant_temperature: majority([skinTemp, eyeTemp, hairTemp]),
-        dominant_value: majority([collapseDepth(skinDepth), collapseDepth(eyeDepth), collapseDepth(hairDepth)]),
+        dominant_value: orderedMedian(
+          [collapseDepth(skinDepth), collapseDepth(eyeDepth), collapseDepth(hairDepth)],
+          ["light", "medium", "deep"]
+        ),
         dominant_chroma: majority([skinChroma, eyeChroma, hairChroma]),
         dominant_contrast: overallContrast,
         confidence: clamp(ex.global_reliability || 0)
@@ -1127,7 +1152,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       conflicts,
       stability_guard: {
         applied: true,
-        version: "4.9.2",
+        version: "4.9.3",
         reason: "single_skin_temperature_flip"
       }
     };
@@ -1138,7 +1163,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.2"
+      version: "4.9.3"
     }
   };
 }
@@ -1233,9 +1258,12 @@ function calculateValue(config, features, quality, reliability) {
   );
 
   const overall = features.overall_impression || {};
-  const overallImpressionMultiplier = Number(
-    config.reliability_engine_v2?.overall_impression_multiplier ??
-    0.25
+  const overallImpressionMultiplier = Math.max(
+    0.50,
+    Number(
+      config.reliability_engine_v2?.overall_impression_multiplier ??
+      0.50
+    )
   );
   const overallReliability = clamp(
     meanNumbers([
@@ -1780,9 +1808,12 @@ function calculateContrast(config, features, quality, reliability) {
   );
 
   const overall = features.overall_impression || {};
-  const overallImpressionMultiplier = Number(
-    config.reliability_engine_v2?.overall_impression_multiplier ??
-    0.25
+  const overallImpressionMultiplier = Math.max(
+    0.50,
+    Number(
+      config.reliability_engine_v2?.overall_impression_multiplier ??
+      0.50
+    )
   );
 
   const overallReliability = clamp(
@@ -1961,6 +1992,173 @@ function matchValue(config, dimension, observed, profile) {
   return Number(mp.opposite_value ?? 0);
 }
 
+function distributionMatchValue(config, dimension, result, profile) {
+  if (!["value", "chroma", "contrast"].includes(dimension)) {
+    return null;
+  }
+
+  const scores = result?.scores;
+  if (!scores || typeof scores !== "object") return null;
+
+  const entries = Object.entries(scores)
+    .map(([name, score]) => [name, Math.max(0, Number(score) || 0)])
+    .filter(([, score]) => score > 0);
+
+  const total = entries.reduce((sum, [, score]) => sum + score, 0);
+  if (total <= 0) return null;
+
+  let expected = 0;
+  for (const [candidate, score] of entries) {
+    const candidateMatch = matchValue(
+      config,
+      dimension,
+      candidate,
+      profile
+    );
+    if (candidateMatch === null) continue;
+    expected += (score / total) * candidateMatch;
+  }
+
+  return round(clamp(expected), 4);
+}
+
+function coreTraitRule(seasonId) {
+  const rules = {
+    true_spring: { dimension: "temperature", family: "warm" },
+    true_autumn: { dimension: "temperature", family: "warm" },
+    true_summer: { dimension: "temperature", family: "cool" },
+    true_winter: { dimension: "temperature", family: "cool" },
+
+    light_spring: { dimension: "value", target: "light" },
+    light_summer: { dimension: "value", target: "light" },
+
+    deep_autumn: { dimension: "value", target: "deep" },
+    deep_winter: { dimension: "value", target: "deep" },
+
+    soft_autumn: { dimension: "chroma", targets: ["soft", "muted"] },
+    soft_summer: { dimension: "chroma", targets: ["soft", "muted"] },
+
+    bright_spring: { dimension: "chroma", targets: ["bright", "clear"] },
+    bright_winter: { dimension: "chroma", targets: ["bright", "clear"] }
+  };
+
+  return rules[seasonId] || null;
+}
+
+function coreTraitSupport(seasonId, dims) {
+  const rule = coreTraitRule(seasonId);
+  if (!rule) return null;
+
+  const result = dims?.[rule.dimension] || {};
+  const confidence = clamp(Number(result.confidence || 0));
+  const classification = result.classification;
+
+  if (rule.family === "warm") {
+    const support = {
+      warm: 1,
+      neutral_warm: 0.80,
+      neutral: 0.35,
+      neutral_cool: 0.10,
+      cool: 0
+    }[classification];
+    return support === undefined ? null : {
+      dimension: rule.dimension,
+      support,
+      confidence
+    };
+  }
+
+  if (rule.family === "cool") {
+    const support = {
+      cool: 1,
+      neutral_cool: 0.80,
+      neutral: 0.35,
+      neutral_warm: 0.10,
+      warm: 0
+    }[classification];
+    return support === undefined ? null : {
+      dimension: rule.dimension,
+      support,
+      confidence
+    };
+  }
+
+  const scores = result.scores || {};
+  const targetSet = new Set(
+    rule.targets || (rule.target ? [rule.target] : [])
+  );
+
+  const total = Object.values(scores)
+    .map(Number)
+    .filter(Number.isFinite)
+    .reduce((sum, value) => sum + Math.max(0, value), 0);
+
+  if (total > 0 && targetSet.size) {
+    const targetMass = [...targetSet].reduce(
+      (sum, target) =>
+        sum + Math.max(0, Number(scores[target] || 0)),
+      0
+    );
+
+    return {
+      dimension: rule.dimension,
+      support: clamp(targetMass / total),
+      confidence
+    };
+  }
+
+  if (!isUnknown(classification)) {
+    return {
+      dimension: rule.dimension,
+      support: targetSet.has(classification) ? 1 : 0,
+      confidence
+    };
+  }
+
+  return null;
+}
+
+function applyCoreTraitGuards(scores, dims) {
+  const adjusted = { ...scores };
+  const applied = Object.fromEntries(
+    Object.keys(scores).map(season => [season, []])
+  );
+
+  for (const season of Object.keys(adjusted)) {
+    const core = coreTraitSupport(season, dims);
+    if (!core || core.confidence < 0.40) continue;
+
+    let penalty = 0;
+
+    if (core.support < 0.12 && core.confidence >= 0.60) {
+      penalty = 22;
+    } else if (core.support < 0.25) {
+      penalty = 15;
+    } else if (core.support < 0.40) {
+      penalty = 8;
+    }
+
+    if (penalty <= 0) continue;
+
+    adjusted[season] = clamp(
+      Number(adjusted[season] || 0) - penalty,
+      0,
+      100
+    );
+
+    applied[season].push({
+      type: "core_trait_penalty",
+      dimension: core.dimension,
+      support: round(core.support, 3),
+      confidence: round(core.confidence, 3),
+      points: -penalty,
+      reason: "Primary seasonal characteristic is weakly supported by the observed evidence."
+    });
+  }
+
+  return { adjusted, applied };
+}
+
 function baseScore(config, profile, dims) {
   const weights = getDimensionWeights(config);
 
@@ -2016,12 +2214,22 @@ function baseScore(config, profile, dims) {
       result
     );
 
-    const match = matchValue(
+    const distributionMatch = distributionMatchValue(
       config,
       dimension,
-      observed,
+      result,
       profile
     );
+
+    const match =
+      distributionMatch !== null
+        ? distributionMatch
+        : matchValue(
+            config,
+            dimension,
+            observed,
+            profile
+          );
 
     const dimensionReliability = clamp(
       Number(
@@ -2094,6 +2302,10 @@ function baseScore(config, profile, dims) {
         4
       ),
       match_value: match,
+      match_mode:
+        distributionMatch !== null
+          ? "score_distribution"
+          : "classification",
       weighted_match_contribution:
         usable
           ? round(effectiveWeight * match, 4)
@@ -2451,6 +2663,27 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
     penalties.push({ type: "poor_photo_quality", value: -penalty });
   }
 
+  const winnerCorePenalty = Array.isArray(ranking?.[0]?.applied_rules)
+    ? ranking[0].applied_rules.find(
+        rule => rule?.type === "core_trait_penalty"
+      )
+    : null;
+
+  if (winnerCorePenalty) {
+    const penalty =
+      Math.abs(Number(winnerCorePenalty.points || 0)) >= 15
+        ? 0.10
+        : 0.05;
+
+    finalScore -= penalty;
+    penalties.push({
+      type: "winner_core_trait_weak",
+      value: -penalty,
+      dimension: winnerCorePenalty.dimension,
+      support: winnerCorePenalty.support
+    });
+  }
+
   finalScore = clamp(finalScore);
 
   const levels = settings.levels || {
@@ -2514,7 +2747,8 @@ function runScoring(config,dims,quality,features) {
   const base = Object.fromEntries(
     Object.entries(baseDetails).map(([season, detail]) => [season, detail.score])
   );
-  const cross = applyCrossRules(config, base, dims);
+  const core = applyCoreTraitGuards(base, dims);
+  const cross = applyCrossRules(config, core.adjusted, dims);
   const excl = applyExclusions(config, cross.adjusted, dims, features);
   const ranking = Object.keys(profiles)
     .map(season => ({
@@ -2532,6 +2766,7 @@ function runScoring(config,dims,quality,features) {
       reliability_aware_scoring:
         baseDetails[season].reliability_aware,
       applied_rules: [
+        ...core.applied[season],
         ...cross.applied[season],
         ...excl.applied[season]
       ]
@@ -2573,13 +2808,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.2",
+    stability_fix_version: "4.9.3",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability_coverage × score_separation_factor × classification_factor",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match + core_trait_guards",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
