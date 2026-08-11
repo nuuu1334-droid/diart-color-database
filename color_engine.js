@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.14 RC
+ * DiArt Color Engine v4.9.15 RC
  * Production-hardening candidate for Make Code.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.14";
+const ENGINE_RUNTIME_VERSION = "4.9.15";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1159,7 +1159,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.14",
+        version: "4.9.15",
         reason: "single_skin_temperature_flip"
       }
     };
@@ -1221,7 +1221,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.14",
+        version: "4.9.15",
         reason: "skin_eye_temperature_conflict_confidence_guard",
         classification_preserved: result.classification
       }
@@ -1233,7 +1233,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.14"
+      version: "4.9.15"
     }
   };
 }
@@ -1731,7 +1731,7 @@ function calculateChroma(config, features, quality, reliability) {
     ? used / adjustedMinimum
     : 1;
 
-  // v4.9.14: continuous Chroma evidence gate.
+  // v4.9.15: continuous Chroma evidence gate.
   // Do not create a cliff when evidence misses the nominal threshold by
   // fractions of a percent. A near-threshold case may classify with a
   // slightly reduced scoring weight. A larger shortfall requires a truly
@@ -2285,10 +2285,10 @@ function temperatureDistributionMatchValue(result, seasonId) {
     neutral_warm: {
       warm: 0.95,
       neutral: 1.00,
-      cool: 0.20
+      cool: 0.13
     },
     neutral_cool: {
-      warm: 0.20,
+      warm: 0.13,
       neutral: 1.00,
       cool: 0.95
     },
@@ -2682,7 +2682,7 @@ function applyCoreTraitGuards(config, scores, dims, features = {}) {
             penalty = 8;
           }
         } else {
-          // v4.9.14: a categorical Light/Deep win is not automatically a
+          // v4.9.15: a categorical Light/Deep win is not automatically a
           // strong dominant trait. When the opposite pole is still almost as
           // strong, apply only a small continuity penalty. This prevents a
           // 44-vs-37 Light/Deep race from behaving like a 65-vs-4 race.
@@ -3038,6 +3038,50 @@ function getConditionObservation(condition,dims,features={}) {
 
   return {matched:options.has(observed), observed, confidence, dimension, field:left};
 }
+function valueDominanceStrength(dims) {
+  const value = dims?.value || {};
+  const cls = value.classification;
+  if (!['light','deep'].includes(cls)) return { class: cls, strength: 'not_extreme', factor: 1 };
+
+  const confidence = clamp(Number(value.confidence || 0));
+  const separation = clamp(Number(value.reliability?.score_separation ?? 0));
+  const shares = normalizedDimensionShares(value.scores || {});
+  const target = Number(shares?.[cls] || 0);
+  const opposite = Number(shares?.[cls === 'light' ? 'deep' : 'light'] || 0);
+  const margin = Math.max(0, target - opposite);
+
+  // Extreme Value labels can be real while still only weakly dominant.
+  // Rules should scale with dominance instead of treating the string label as binary truth.
+  let factor = 1;
+  let strength = 'strong';
+  if (separation < 0.22 || confidence < 0.58 || margin < 0.035) {
+    factor = 0.35;
+    strength = 'weak';
+  } else if (separation < 0.38 || confidence < 0.68 || margin < 0.10) {
+    factor = 0.60;
+    strength = 'moderate';
+  }
+
+  return {
+    class: cls,
+    strength,
+    factor,
+    confidence: round(confidence,3),
+    score_separation: round(separation,3),
+    target_share: round(target,3),
+    opposite_share: round(opposite,3),
+    share_margin: round(margin,3)
+  };
+}
+
+function isExtremeValueCondition(ev) {
+  return Boolean(
+    ev &&
+    ev.dimension === 'value' &&
+    ['light','deep'].includes(ev.observed)
+  );
+}
+
 function conditionMatches(condition,dims,features={}) {
   return getConditionObservation(condition,dims,features).matched;
 }
@@ -3091,9 +3135,21 @@ function applyExclusions(config,scores,dims,features) {
       const ev=getConditionObservation(rule.condition,dims,features);
       if(!ev.matched || ev.confidence<0.4) continue;
       const severity=ev.confidence>=0.6?"strong":"moderate";
-      const penalty=Math.abs(Number(scale[severity]??(severity==="strong"?-15:-8)));
+      const rawPenalty=Math.abs(Number(scale[severity]??(severity==="strong"?-15:-8)));
+      const valueDominance=isExtremeValueCondition(ev)?valueDominanceStrength(dims):null;
+      const penalty=valueDominance
+        ? Math.max(3, Math.round(rawPenalty * Number(valueDominance.factor || 1)))
+        : rawPenalty;
       adjusted[season]=clamp(adjusted[season]-penalty,0,100);
-      applied[season].push({type:`${severity}_penalty`,condition:rule.condition,points:-penalty,reason:rule.reason,observed:ev.observed,confidence:round(ev.confidence,3)});
+      applied[season].push({
+        type:valueDominance&&valueDominance.factor<1?"scaled_value_penalty":`${severity}_penalty`,
+        condition:rule.condition,
+        points:-penalty,
+        reason:rule.reason,
+        observed:ev.observed,
+        confidence:round(ev.confidence,3),
+        ...(valueDominance?{value_dominance:valueDominance,unscaled_points:-rawPenalty}:{})
+      });
     }
 
     const hardEvidence=[];
@@ -3102,8 +3158,13 @@ function applyExclusions(config,scores,dims,features) {
       if(ev.matched) hardEvidence.push({rule,ev});
     }
 
-    const veryStrong=hardEvidence.filter(x=>x.ev.confidence>=0.75);
-    const independentStrong=hardEvidence.filter(x=>x.ev.confidence>=0.60);
+    const evidenceStrength = x => {
+      if (!isExtremeValueCondition(x?.ev)) return Number(x?.ev?.confidence || 0);
+      const dominance = valueDominanceStrength(dims);
+      return Number(x?.ev?.confidence || 0) * Number(dominance.factor || 1);
+    };
+    const veryStrong=hardEvidence.filter(x=>evidenceStrength(x)>=0.75);
+    const independentStrong=hardEvidence.filter(x=>evidenceStrength(x)>=0.60);
     const independentDimensions=new Set(independentStrong.map(x=>x.ev.dimension||x.ev.field));
     const qualifies=veryStrong.length>=1 || independentDimensions.size>=2;
 
@@ -3117,9 +3178,21 @@ function applyExclusions(config,scores,dims,features) {
     } else {
       for(const item of hardEvidence){
         if(item.ev.confidence<0.4) continue;
-        const penalty=Math.abs(Number(scale.strong??-15));
+        const rawPenalty=Math.abs(Number(scale.strong??-15));
+        const valueDominance=isExtremeValueCondition(item.ev)?valueDominanceStrength(dims):null;
+        const penalty=valueDominance
+          ? Math.max(3, Math.round(rawPenalty * Number(valueDominance.factor || 1)))
+          : rawPenalty;
         adjusted[season]=clamp(adjusted[season]-penalty,0,100);
-        applied[season].push({type:"strong_penalty_from_unconfirmed_hard_rule",condition:item.rule.condition,points:-penalty,reason:item.rule.reason,observed:item.ev.observed,confidence:round(item.ev.confidence,3)});
+        applied[season].push({
+          type:valueDominance&&valueDominance.factor<1?"scaled_value_penalty_from_unconfirmed_hard_rule":"strong_penalty_from_unconfirmed_hard_rule",
+          condition:item.rule.condition,
+          points:-penalty,
+          reason:item.rule.reason,
+          observed:item.ev.observed,
+          confidence:round(item.ev.confidence,3),
+          ...(valueDominance?{value_dominance:valueDominance,unscaled_points:-rawPenalty}:{})
+        });
       }
     }
   }
@@ -3234,7 +3307,11 @@ function adjacentTrueDeepAutumnResolver(dims, features) {
     add("true_autumn", "value_medium_share", 4 * Number(value.medium || 0) + 1 * Number(value.light || 0), round(value.medium || 0, 3));
   }
 
-  if (hairFamily === "deep") add("deep_autumn", "hair_depth", 1.50, features?.hair?.depth);
+  const deepShare = Number(value.deep || 0);
+  if (hairFamily === "deep") {
+    const hairDepthPoints = deepShare >= 0.35 ? 0.85 : 1.20;
+    add("deep_autumn", "hair_depth_decorrelated", hairDepthPoints, features?.hair?.depth);
+  }
   else if (hairFamily === "medium") add("true_autumn", "hair_depth", 0.75, features?.hair?.depth);
   else if (hairFamily === "light") add("true_autumn", "hair_depth", 1.00, features?.hair?.depth);
 
@@ -3243,7 +3320,9 @@ function adjacentTrueDeepAutumnResolver(dims, features) {
   else if (eyeBrightness === "high") add("true_autumn", "eye_depth", 0.45, eyeBrightness);
 
   if (contrast.total > 0) {
-    add("deep_autumn", "contrast_depth_support", 0.45 * (Number(contrast.medium || 0) + 1.25 * Number(contrast.high || 0)), round((contrast.medium || 0) + (contrast.high || 0), 3));
+    // Medium contrast is not independent evidence of Deep Autumn. Only the high-contrast
+    // share gets a meaningful Deep bonus; medium contrast primarily supports True Autumn.
+    add("deep_autumn", "contrast_depth_support", 0.18 * Number(contrast.medium || 0) + 0.55 * Number(contrast.high || 0), round((contrast.medium || 0) + (contrast.high || 0), 3));
     add("true_autumn", "contrast_medium_support", 0.75 * Number(contrast.medium || 0) + 0.30 * Number(contrast.low || 0), round(contrast.medium || 0, 3));
   }
 
@@ -3314,7 +3393,7 @@ function resolveConfusion(config,ranking,dims,features) {
       { candidate:"true_autumn", type:"distribution_chroma", points:round(4*chromaAutumn,2), support:round(chromaAutumn,3) }
     ];
 
-    // v4.9.14: use independent structural evidence only as a tie-breaker.
+    // v4.9.15: use independent structural evidence only as a tie-breaker.
     // This avoids forcing Autumn from hair alone, but prevents medium-deep
     // hair + darker brows from being ignored when Spring/Autumn distributions
     // are nearly tied.
@@ -3364,7 +3443,7 @@ function resolveConfusion(config,ranking,dims,features) {
     };
   }
 
-  // v4.9.14: explicit adjacent resolvers for the three recurrent
+  // v4.9.15: explicit adjacent resolvers for the three recurrent
   // calibration ambiguities. They use independent structure rather than
   // simply repeating the season score.
   if (pair.has("light_spring") && pair.has("true_spring")) {
@@ -3878,17 +3957,18 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.14",
+    stability_fix_version: "4.9.15",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; v4.9.14 adds weak-dominance continuity for Light/Deep traits, explicit Light↔True and True Autumn↔Deep Autumn resolvers, structural Spring↔Autumn tie-breaks, same-family unresolved confidence scaling, continuous Temperature core support, stricter True Winter/Soft guards, smooth Chroma evidence weighting, intrinsic-gap confidence protection, and commercial release final-gate",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; v4.9.15 scales Light/Deep rule severity by Value dominance, de-correlates depth evidence in the True Autumn↔Deep Autumn resolver, tightens opposite neutral-temperature family leakage, preserves smooth Chroma evidence weighting, and keeps commercial release final-gate",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
     ),
+    value_dominance: valueDominanceStrength(dims),
     dimensions: Object.fromEntries(
       Object.entries(dims).map(([name, result]) => [
         name,
