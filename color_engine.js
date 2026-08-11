@@ -1029,23 +1029,10 @@ function calculateTemperature(config, features, quality, reliability) {
 
   return {
     classification,
-    classification_reason: classificationReason,
     confidence,
     scores,
     evidence,
     conflicts: [],
-    decision_gate: {
-      used_weight: round(used, 4),
-      minimum_required_weight: round(adjustedMinimum, 4),
-      passed_minimum_evidence: used >= adjustedMinimum,
-      score_leader: ordered[0]?.[0] || null,
-      score_leader_value: ordered[0] ? round(Number(ordered[0][1] || 0), 2) : null,
-      score_runner_up: ordered[1]?.[0] || null,
-      score_runner_up_value: ordered[1] ? round(Number(ordered[1][1] || 0), 2) : null,
-      score_gap: ordered.length >= 2
-        ? round(Number(ordered[0][1] || 0) - Number(ordered[1][1] || 0), 2)
-        : null
-    },
     reliability: {
       applied: true,
       available_weight: round(
@@ -1773,10 +1760,31 @@ function calculateChroma(config, features, quality, reliability) {
 
   return {
     classification,
+    classification_reason: classificationReason,
     confidence,
     scores,
     evidence,
     conflicts: [],
+    decision_gate: {
+      used_weight: round(used, 4),
+      minimum_required_weight: round(adjustedMinimum, 4),
+      passed_minimum_evidence: used >= adjustedMinimum,
+      score_leader: ordered[0]?.[0] || null,
+      score_leader_value: ordered[0]
+        ? round(Number(ordered[0][1] || 0), 2)
+        : null,
+      score_runner_up: ordered[1]?.[0] || null,
+      score_runner_up_value: ordered[1]
+        ? round(Number(ordered[1][1] || 0), 2)
+        : null,
+      score_gap: ordered.length >= 2
+        ? round(
+            Number(ordered[0][1] || 0) -
+            Number(ordered[1][1] || 0),
+            2
+          )
+        : null
+    },
     reliability: {
       applied: true,
       available_weight: round(
