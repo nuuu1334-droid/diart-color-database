@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.13 RC
+ * DiArt Color Engine v4.9.14 RC
  * Production-hardening candidate for Make Code.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.13";
+const ENGINE_RUNTIME_VERSION = "4.9.14";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1159,7 +1159,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.13",
+        version: "4.9.14",
         reason: "single_skin_temperature_flip"
       }
     };
@@ -1221,7 +1221,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.13",
+        version: "4.9.14",
         reason: "skin_eye_temperature_conflict_confidence_guard",
         classification_preserved: result.classification
       }
@@ -1233,7 +1233,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.13"
+      version: "4.9.14"
     }
   };
 }
@@ -1731,7 +1731,7 @@ function calculateChroma(config, features, quality, reliability) {
     ? used / adjustedMinimum
     : 1;
 
-  // v4.9.13: continuous Chroma evidence gate.
+  // v4.9.14: continuous Chroma evidence gate.
   // Do not create a cliff when evidence misses the nominal threshold by
   // fractions of a percent. A near-threshold case may classify with a
   // slightly reduced scoring weight. A larger shortfall requires a truly
@@ -2668,17 +2668,27 @@ function applyCoreTraitGuards(config, scores, dims, features = {}) {
       const oppositeScore = Number(core.opposite_score);
       const selectedTarget = core.classification === core.target;
 
-      if (!selectedTarget &&
-          Number.isFinite(targetScore) &&
-          Number.isFinite(oppositeScore)) {
+      if (Number.isFinite(targetScore) && Number.isFinite(oppositeScore)) {
         const oppositeLead = oppositeScore - targetScore;
+        const targetLead = targetScore - oppositeScore;
+        const oppositeRatio = targetScore > 0 ? oppositeScore / targetScore : 1;
 
-        if (oppositeLead >= 25 && core.confidence >= 0.60) {
-          penalty = 22;
-        } else if (oppositeLead >= 15) {
-          penalty = 15;
-        } else if (oppositeLead >= 8) {
-          penalty = 8;
+        if (!selectedTarget) {
+          if (oppositeLead >= 25 && core.confidence >= 0.60) {
+            penalty = 22;
+          } else if (oppositeLead >= 15) {
+            penalty = 15;
+          } else if (oppositeLead >= 8) {
+            penalty = 8;
+          }
+        } else {
+          // v4.9.14: a categorical Light/Deep win is not automatically a
+          // strong dominant trait. When the opposite pole is still almost as
+          // strong, apply only a small continuity penalty. This prevents a
+          // 44-vs-37 Light/Deep race from behaving like a 65-vs-4 race.
+          if (targetLead < 10 && oppositeRatio >= 0.80) {
+            penalty = core.confidence >= 0.70 ? 6 : 4;
+          }
         }
       }
     } else if (["soft_autumn", "soft_summer"].includes(season) &&
@@ -3115,6 +3125,145 @@ function applyExclusions(config,scores,dims,features) {
   }
   return {adjusted,hard,applied,hardReasons,scoreBefore};
 }
+
+function normalizedDimensionShares(scores) {
+  const clean = Object.fromEntries(
+    Object.entries(scores || {}).map(([k,v]) => [k, Math.max(0, Number(v) || 0)])
+  );
+  const total = Object.values(clean).reduce((sum, value) => sum + value, 0);
+  if (total <= 0) return { total: 0 };
+  return Object.fromEntries([
+    ["total", total],
+    ...Object.entries(clean).map(([k,v]) => [k, v / total])
+  ]);
+}
+
+function contrastShares(dims) {
+  return normalizedDimensionShares(dims?.contrast?.scores || {});
+}
+
+function adjacentLightTrueResolver(lightSeason, trueSeason, dims, features) {
+  const value = normalizedDimensionShares(dims?.value?.scores || {});
+  const contrast = contrastShares(dims);
+  const hairFamily = collapseDepth(features?.hair?.depth);
+  const eyeBrightness = features?.eyes?.brightness || "unknown";
+  const temperatureClass = dims?.temperature?.classification || "uncertain";
+  const lightFamily = lightSeason.endsWith("spring") ? "warm" : "cool";
+
+  let lightPoints = 0;
+  let truePoints = 0;
+  const evidence = [];
+
+  const add = (candidate, type, points, observed = null) => {
+    if (!Number.isFinite(points) || points === 0) return;
+    if (candidate === lightSeason) lightPoints += points;
+    else truePoints += points;
+    evidence.push({
+      candidate,
+      type,
+      points: round(points, 2),
+      ...(observed !== null ? { observed } : {})
+    });
+  };
+
+  if (value.total > 0) {
+    add(lightSeason, "value_light_share", 5 * Number(value.light || 0), round(value.light || 0, 3));
+    add(trueSeason, "value_nonlight_share", 4 * (Number(value.medium || 0) + Number(value.deep || 0)), round((value.medium || 0) + (value.deep || 0), 3));
+  }
+
+  if (hairFamily === "light") add(lightSeason, "hair_depth", 1.50, features?.hair?.depth);
+  else if (hairFamily === "medium") {
+    add(lightSeason, "hair_depth", 0.50, features?.hair?.depth);
+    add(trueSeason, "hair_depth", 0.75, features?.hair?.depth);
+  } else if (hairFamily === "deep") {
+    add(trueSeason, "hair_depth", 1.25, features?.hair?.depth);
+  }
+
+  if (eyeBrightness === "high") add(lightSeason, "eye_brightness", 0.75, eyeBrightness);
+  else if (eyeBrightness === "medium") add(trueSeason, "eye_brightness", 0.35, eyeBrightness);
+  else if (eyeBrightness === "low") add(trueSeason, "eye_brightness", 0.60, eyeBrightness);
+
+  if (contrast.total > 0) {
+    add(lightSeason, "contrast_low_share", 0.80 * Number(contrast.low || 0), round(contrast.low || 0, 3));
+    add(trueSeason, "contrast_medium_high_share", 0.80 * (Number(contrast.medium || 0) + Number(contrast.high || 0)), round((contrast.medium || 0) + (contrast.high || 0), 3));
+  }
+
+  const trueDirectional = lightFamily === "warm" ? "warm" : "cool";
+  const neutralDirectional = lightFamily === "warm" ? "neutral_warm" : "neutral_cool";
+  if (temperatureClass === trueDirectional) add(trueSeason, "temperature_purity", 0.75, temperatureClass);
+  else if (temperatureClass === neutralDirectional) add(lightSeason, "temperature_neutrality", 0.45, temperatureClass);
+
+  const margin = Math.abs(lightPoints - truePoints);
+  return {
+    winner: lightPoints > truePoints ? lightSeason : trueSeason,
+    margin,
+    points: {
+      [lightSeason]: round(lightPoints, 2),
+      [trueSeason]: round(truePoints, 2)
+    },
+    evidence
+  };
+}
+
+function adjacentTrueDeepAutumnResolver(dims, features) {
+  const value = normalizedDimensionShares(dims?.value?.scores || {});
+  const contrast = contrastShares(dims);
+  const hairFamily = collapseDepth(features?.hair?.depth);
+  const eyeBrightness = features?.eyes?.brightness || "unknown";
+  const temperatureClass = dims?.temperature?.classification || "uncertain";
+  const chromaClass = dims?.chroma?.classification || "uncertain";
+
+  let truePoints = 0;
+  let deepPoints = 0;
+  const evidence = [];
+
+  const add = (candidate, type, points, observed = null) => {
+    if (!Number.isFinite(points) || points === 0) return;
+    if (candidate === "true_autumn") truePoints += points;
+    else deepPoints += points;
+    evidence.push({
+      candidate,
+      type,
+      points: round(points, 2),
+      ...(observed !== null ? { observed } : {})
+    });
+  };
+
+  if (value.total > 0) {
+    add("deep_autumn", "value_deep_share", 5 * Number(value.deep || 0), round(value.deep || 0, 3));
+    add("true_autumn", "value_medium_share", 4 * Number(value.medium || 0) + 1 * Number(value.light || 0), round(value.medium || 0, 3));
+  }
+
+  if (hairFamily === "deep") add("deep_autumn", "hair_depth", 1.50, features?.hair?.depth);
+  else if (hairFamily === "medium") add("true_autumn", "hair_depth", 0.75, features?.hair?.depth);
+  else if (hairFamily === "light") add("true_autumn", "hair_depth", 1.00, features?.hair?.depth);
+
+  if (eyeBrightness === "low") add("deep_autumn", "eye_depth", 0.75, eyeBrightness);
+  else if (eyeBrightness === "medium") add("deep_autumn", "eye_depth", 0.40, eyeBrightness);
+  else if (eyeBrightness === "high") add("true_autumn", "eye_depth", 0.45, eyeBrightness);
+
+  if (contrast.total > 0) {
+    add("deep_autumn", "contrast_depth_support", 0.45 * (Number(contrast.medium || 0) + 1.25 * Number(contrast.high || 0)), round((contrast.medium || 0) + (contrast.high || 0), 3));
+    add("true_autumn", "contrast_medium_support", 0.75 * Number(contrast.medium || 0) + 0.30 * Number(contrast.low || 0), round(contrast.medium || 0, 3));
+  }
+
+  if (temperatureClass === "warm") add("true_autumn", "temperature_purity", 0.75, temperatureClass);
+  else if (["neutral_warm", "neutral"].includes(temperatureClass)) add("deep_autumn", "temperature_neutrality", 0.35, temperatureClass);
+
+  if (chromaClass === "balanced") add("true_autumn", "balanced_chroma", 0.40, chromaClass);
+
+  const margin = Math.abs(truePoints - deepPoints);
+  return {
+    winner: truePoints > deepPoints ? "true_autumn" : "deep_autumn",
+    margin,
+    points: {
+      true_autumn: round(truePoints, 2),
+      deep_autumn: round(deepPoints, 2)
+    },
+    evidence
+  };
+}
+
 function resolveConfusion(config,ranking,dims,features) {
   if (ranking.length < 2) return { triggered:false, unresolved:false, winner:null };
   const [a,b] = ranking;
@@ -3165,6 +3314,24 @@ function resolveConfusion(config,ranking,dims,features) {
       { candidate:"true_autumn", type:"distribution_chroma", points:round(4*chromaAutumn,2), support:round(chromaAutumn,3) }
     ];
 
+    // v4.9.14: use independent structural evidence only as a tie-breaker.
+    // This avoids forcing Autumn from hair alone, but prevents medium-deep
+    // hair + darker brows from being ignored when Spring/Autumn distributions
+    // are nearly tied.
+    const hairFamily = collapseDepth(features?.hair?.depth);
+    if (hairFamily === "deep") {
+      autumnPoints += 1.50;
+      evidence.push({ candidate:"true_autumn", type:"hair_depth_tiebreak", points:1.50, observed:features?.hair?.depth });
+    } else if (hairFamily === "light") {
+      springPoints += 1.00;
+      evidence.push({ candidate:"true_spring", type:"hair_depth_tiebreak", points:1.00, observed:features?.hair?.depth });
+    }
+
+    if (features?.eyebrows?.depth_relative_to_hair === "darker") {
+      autumnPoints += 0.75;
+      evidence.push({ candidate:"true_autumn", type:"darker_eyebrows_tiebreak", points:0.75, observed:"darker" });
+    }
+
     const margin = Math.abs(springPoints - autumnPoints);
     const minimum = Math.max(
       1.50,
@@ -3194,6 +3361,54 @@ function resolveConfusion(config,ranking,dims,features) {
         true_spring:round(springPoints,2),
         true_autumn:round(autumnPoints,2)
       }
+    };
+  }
+
+  // v4.9.14: explicit adjacent resolvers for the three recurrent
+  // calibration ambiguities. They use independent structure rather than
+  // simply repeating the season score.
+  if (pair.has("light_spring") && pair.has("true_spring")) {
+    const resolved = adjacentLightTrueResolver("light_spring", "true_spring", dims, features);
+    const minimum = 0.70;
+    return {
+      triggered: true,
+      pair_id: "adjacent_light_spring_vs_true_spring",
+      winner: resolved.margin >= minimum ? resolved.winner : null,
+      decision_margin: round(resolved.margin, 2),
+      unresolved: resolved.margin < minimum,
+      applied_evidence: resolved.evidence,
+      points: resolved.points,
+      ...(resolved.margin < minimum ? { reason: "adjacent_evidence_margin_below_minimum" } : {})
+    };
+  }
+
+  if (pair.has("light_summer") && pair.has("true_summer")) {
+    const resolved = adjacentLightTrueResolver("light_summer", "true_summer", dims, features);
+    const minimum = 0.70;
+    return {
+      triggered: true,
+      pair_id: "adjacent_light_summer_vs_true_summer",
+      winner: resolved.margin >= minimum ? resolved.winner : null,
+      decision_margin: round(resolved.margin, 2),
+      unresolved: resolved.margin < minimum,
+      applied_evidence: resolved.evidence,
+      points: resolved.points,
+      ...(resolved.margin < minimum ? { reason: "adjacent_evidence_margin_below_minimum" } : {})
+    };
+  }
+
+  if (pair.has("true_autumn") && pair.has("deep_autumn")) {
+    const resolved = adjacentTrueDeepAutumnResolver(dims, features);
+    const minimum = 1.00;
+    return {
+      triggered: true,
+      pair_id: "adjacent_deep_autumn_vs_true_autumn",
+      winner: resolved.margin >= minimum ? resolved.winner : null,
+      decision_margin: round(resolved.margin, 2),
+      unresolved: resolved.margin < minimum,
+      applied_evidence: resolved.evidence,
+      points: resolved.points,
+      ...(resolved.margin < minimum ? { reason: "adjacent_evidence_margin_below_minimum" } : {})
     };
   }
 
@@ -3385,9 +3600,17 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
   const penalties = [];
 
   if (confusion?.triggered && confusion?.unresolved && confusion?.pair_id) {
-    const penalty = Number(settings.penalties?.specific_confusion_unresolved ?? 0.08);
+    const isAdjacentFamilyPair = String(confusion.pair_id || "").startsWith("adjacent_");
+    const configuredPenalty = Number(settings.penalties?.specific_confusion_unresolved ?? 0.08);
+    const penalty = isAdjacentFamilyPair
+      ? Math.min(configuredPenalty, 0.04)
+      : configuredPenalty;
     finalScore -= penalty;
-    penalties.push({ type: "specific_confusion_unresolved", value: -penalty });
+    penalties.push({
+      type: "specific_confusion_unresolved",
+      value: -penalty,
+      scope: isAdjacentFamilyPair ? "same_family_adjacent" : "specific_pair"
+    });
   } else if (confusion?.triggered && confusion?.unresolved) {
     const penalty = Number(settings.penalties?.generic_close_result ?? 0.03);
     finalScore -= penalty;
@@ -3655,13 +3878,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.13",
+    stability_fix_version: "4.9.14",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; v4.9.13 adds season-specific Value invariants, relative Light/Deep guards, continuous Temperature core support, stricter True Winter/Soft guards, smooth Chroma evidence weighting, resolver de-duplication, intrinsic-gap confidence protection, and commercial release final-gate",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; v4.9.14 adds weak-dominance continuity for Light/Deep traits, explicit Light↔True and True Autumn↔Deep Autumn resolvers, structural Spring↔Autumn tie-breaks, same-family unresolved confidence scaling, continuous Temperature core support, stricter True Winter/Soft guards, smooth Chroma evidence weighting, intrinsic-gap confidence protection, and commercial release final-gate",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
