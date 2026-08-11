@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.10
- * Stable Make Code entrypoint loaded from GitHub.
+ * DiArt Color Engine v4.9.12 RC
+ * Production-hardening candidate for Make Code.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.11";
+const ENGINE_RUNTIME_VERSION = "4.9.12";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -967,7 +967,7 @@ function calculateTemperature(config, features, quality, reliability) {
           3
         )
       },
-      1
+      hairNaturalnessMultiplier
     );
   }
 
@@ -979,7 +979,7 @@ function calculateTemperature(config, features, quality, reliability) {
     adjustedSourceWeight("skin") +
     adjustedSourceWeight("lips") +
     adjustedSourceWeight("eyes") +
-    adjustedSourceWeight("hair");
+    adjustedSourceWeight("hair") * hairNaturalnessMultiplier;
 
   const minimumEvidence =
     Number(
@@ -1159,7 +1159,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.11",
+        version: "4.9.12",
         reason: "single_skin_temperature_flip"
       }
     };
@@ -1221,7 +1221,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.11",
+        version: "4.9.12",
         reason: "skin_eye_temperature_conflict_confidence_guard",
         classification_preserved: result.classification
       }
@@ -1233,7 +1233,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.11"
+      version: "4.9.12"
     }
   };
 }
@@ -1278,7 +1278,7 @@ function calculateValue(config, features, quality, reliability) {
   used += addMapping(
     totals,
     cfg.mapping.hair_depth?.[hair.depth],
-    sw.hair * rel("hair"),
+    sw.hair * rel("hair") * hairMultiplier,
     clamp(hair.confidence),
     evidence,
     {
@@ -1429,7 +1429,7 @@ function calculateValue(config, features, quality, reliability) {
 
   const adjustedAvailableWeight =
     sw.skin * rel("skin") +
-    sw.hair * rel("hair") +
+    sw.hair * rel("hair") * hairMultiplier +
     sw.eyes * rel("eyes") +
     (eyebrowValueMapping ? eyebrowWeight * rel("eyebrows") : 0) +
     sw.overall_impression * overallImpressionMultiplier * overallReliability;
@@ -1700,7 +1700,8 @@ function calculateChroma(config, features, quality, reliability) {
     Number(sw.skin || 0) * reliabilityOf("skin") +
     Number(sw.eyes || 0) * reliabilityOf("eyes") +
     Number(sw.hair || 0) *
-      reliabilityOf("hair") +
+      reliabilityOf("hair") *
+      hairNaturalnessMultiplier +
     Number(sw.contrast || 0) *
       reliabilityOf("contrast") +
     Number(sw.overall_impression || 0) *
@@ -1730,19 +1731,28 @@ function calculateChroma(config, features, quality, reliability) {
     ? used / adjustedMinimum
     : 1;
 
-  // v4.9.11: a very strong score lead may compensate for a small shortfall
-  // in total evidence weight. This is deliberately conservative: it only
-  // activates when at least 90% of the required evidence is present and the
-  // leading chroma family is ahead by 20+ points. Ordinary close or moderate
-  // leads still require the normal minimum evidence threshold.
+  // v4.9.12: continuous Chroma evidence gate.
+  // Do not create a cliff when evidence misses the nominal threshold by
+  // fractions of a percent. A near-threshold case may classify with a
+  // slightly reduced scoring weight. A larger shortfall requires a truly
+  // decisive score lead and receives a stronger weight reduction.
+  const nearThresholdOverride =
+    ordered.length >= 2 &&
+    used < adjustedMinimum &&
+    evidenceRatio >= 0.97 &&
+    scoreGap >= 10;
+
   const decisiveLeadOverride =
     ordered.length >= 2 &&
     used < adjustedMinimum &&
+    !nearThresholdOverride &&
     evidenceRatio >= 0.90 &&
     scoreGap >= 20;
 
   const passedEvidenceGate =
-    used >= adjustedMinimum || decisiveLeadOverride;
+    used >= adjustedMinimum ||
+    nearThresholdOverride ||
+    decisiveLeadOverride;
 
   if (passedEvidenceGate && ordered.length >= 2) {
     const [firstName, firstScore] = ordered[0];
@@ -1770,24 +1780,38 @@ function calculateChroma(config, features, quality, reliability) {
   const confidence = metrics.confidence;
 
   const chromaDecisionReason =
-    decisiveLeadOverride && classification !== "uncertain"
-      ? "classified_from_decisive_lead_override"
-      : !passedEvidenceGate
-        ? "insufficient_total_evidence_weight"
-        : ordered.length < 2
-          ? "insufficient_scored_categories"
-          : (
-              chromaMetrics.coverage < 0.60 &&
-              scoreGap < 10
-            )
-            ? "low_coverage_close_race"
-            : classification !== "uncertain"
-              ? "classified_from_score_lead"
-              : "insufficient_score_separation";
+    nearThresholdOverride && classification !== "uncertain"
+      ? "classified_from_near_threshold_evidence"
+      : decisiveLeadOverride && classification !== "uncertain"
+        ? "classified_from_decisive_lead_override"
+        : !passedEvidenceGate
+          ? "insufficient_total_evidence_weight"
+          : ordered.length < 2
+            ? "insufficient_scored_categories"
+            : (
+                chromaMetrics.coverage < 0.60 &&
+                scoreGap < 10
+              )
+              ? "low_coverage_close_race"
+              : classification !== "uncertain"
+                ? "classified_from_score_lead"
+                : "insufficient_score_separation";
+
+  const chromaScoringWeightFactor =
+    classification === "uncertain"
+      ? Number(config.scoring_algorithm?.uncertain_dimension_factor ?? 0.45)
+      : used >= adjustedMinimum
+        ? 1
+        : nearThresholdOverride
+          ? 0.92
+          : decisiveLeadOverride
+            ? 0.75
+            : 1;
 
   return {
     classification,
     classification_reason: chromaDecisionReason,
+    scoring_weight_factor: round(chromaScoringWeightFactor, 3),
     confidence,
     scores,
     evidence,
@@ -1797,7 +1821,9 @@ function calculateChroma(config, features, quality, reliability) {
       minimum_required_weight: round(adjustedMinimum, 4),
       passed_minimum_evidence: used >= adjustedMinimum,
       passed_effective_evidence_gate: passedEvidenceGate,
+      near_threshold_override_applied: nearThresholdOverride,
       decisive_lead_override_applied: decisiveLeadOverride,
+      scoring_weight_factor: round(chromaScoringWeightFactor, 3),
       evidence_ratio_to_minimum: round(evidenceRatio, 3),
       score_leader: ordered[0]?.[0] || null,
       score_leader_value: ordered[0]
@@ -1943,7 +1969,7 @@ function calculateContrast(config, features, quality, reliability) {
         3
       )
     },
-    1
+    hairNaturalnessMultiplier
   );
 
   const skinEyeReliability = combinedReliability([
@@ -2056,7 +2082,8 @@ function calculateContrast(config, features, quality, reliability) {
 
   const adjustedAvailableWeight =
     Number(sw.skin_hair_contrast || 0) *
-      skinHairReliability +
+      skinHairReliability *
+      hairNaturalnessMultiplier +
     Number(sw.skin_eye_contrast || 0) *
       skinEyeReliability +
     Number(sw.feature_definition || 0) *
@@ -2738,10 +2765,16 @@ function baseScore(config, profile, dims, seasonId) {
     const separationFactor =
       0.75 + 0.25 * separation;
 
+    const explicitScoringWeightFactor = Number(
+      result?.scoring_weight_factor
+    );
+
     const classificationFactor =
-      classificationWasUncertain
-        ? uncertainFactor
-        : 1;
+      Number.isFinite(explicitScoringWeightFactor)
+        ? clamp(explicitScoringWeightFactor)
+        : classificationWasUncertain
+          ? uncertainFactor
+          : 1;
 
     const confidenceEligible =
       rawConfidence >= minConf ||
@@ -3483,13 +3516,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.11",
+    stability_fix_version: "4.9.12",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.11 + season scoring respects reliability score-separation caps + diagnostic guard entries excluded from conflict penalties + adaptive chroma evidence gate + True Winter composite guard + calibrated core guards",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.12 + hair naturalness is applied symmetrically to used/available evidence + continuous chroma evidence gate with near-threshold/decisive weight factors + season scoring respects reliability score-separation caps + diagnostic guard entries excluded from conflict penalties + True Winter composite guard + calibrated core guards",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
