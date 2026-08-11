@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.9
+ * DiArt Color Engine v4.9.10
  * Stable Make Code entrypoint loaded from GitHub.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.9";
+const ENGINE_RUNTIME_VERSION = "4.9.10";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1159,13 +1159,13 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.9",
+        version: "4.9.10",
         reason: "single_skin_temperature_flip"
       }
     };
   }
 
-  // v4.9.9: contradictory skin/eye temperature evidence must reduce
+  // v4.9.10: contradictory skin/eye temperature evidence must reduce
   // certainty even when the directional winner remains the same.
   // This prevents neutral-warm / neutral-cool borderline cases from
   // behaving like fully separated warm/cool observations in season scoring.
@@ -1221,7 +1221,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.9",
+        version: "4.9.10",
         reason: "skin_eye_temperature_conflict_confidence_guard",
         classification_preserved: result.classification
       }
@@ -1233,7 +1233,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.9"
+      version: "4.9.10"
     }
   };
 }
@@ -1690,7 +1690,6 @@ function calculateChroma(config, features, quality, reliability) {
   );
 
   let classification = "uncertain";
-  let classificationReason = "not_enough_evidence";
 
   const originalTotalWeight = Object.values(sw).reduce(
     (sum, value) => sum + value,
@@ -1734,33 +1733,42 @@ function calculateChroma(config, features, quality, reliability) {
 
     if (lowCoverageCloseRace) {
       classification = "uncertain";
-      classificationReason = "low_coverage_close_race";
     } else if (gap >= 6) {
       classification = firstName;
-      classificationReason = "clear_score_lead";
     } else if (
       ["balanced", "soft", "muted"].includes(firstName) &&
       firstScore >= 35
     ) {
       classification = firstName;
-      classificationReason = "supported_soft_family_lead";
     } else {
       classification = "uncertain";
-      classificationReason = "insufficient_score_separation";
     }
-  } else if (used < adjustedMinimum) {
-    classificationReason = "insufficient_total_evidence_weight";
-  } else if (ordered.length < 2) {
-    classificationReason = "insufficient_scored_categories";
   }
 
   const metrics = chromaMetrics;
 
   const confidence = metrics.confidence;
 
+  const chromaDecisionReason =
+    used < adjustedMinimum
+      ? "insufficient_total_evidence_weight"
+      : ordered.length < 2
+        ? "insufficient_scored_categories"
+        : (
+            chromaMetrics.coverage < 0.60 &&
+            (
+              Number(ordered[0]?.[1] || 0) -
+              Number(ordered[1]?.[1] || 0)
+            ) < 10
+          )
+          ? "low_coverage_close_race"
+          : classification !== "uncertain"
+            ? "classified_from_score_lead"
+            : "insufficient_score_separation";
+
   return {
     classification,
-    classification_reason: classificationReason,
+    classification_reason: chromaDecisionReason,
     confidence,
     scores,
     evidence,
@@ -2575,7 +2583,7 @@ function baseScore(config, profile, dims, seasonId) {
       Math.max(0, values[0] - values[1]) / 20
     );
 
-    // v4.9.9: stability/reliability guards may intentionally cap
+    // v4.9.10: stability/reliability guards may intentionally cap
     // score separation (e.g. opposing skin vs eye temperature).
     // Season scoring must respect that cap instead of recomputing
     // full separation from the unchanged raw score array.
@@ -3372,13 +3380,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.9",
+    stability_fix_version: "4.9.10",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.9 + season scoring respects reliability score-separation caps + diagnostic guard entries are excluded from conflict penalties + chroma evidence gate diagnostics + calibrated core guards",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.10 + season scoring respects reliability score-separation caps + diagnostic guard entries excluded from conflict penalties + chroma gate diagnostics + calibrated core guards",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
