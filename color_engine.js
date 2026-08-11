@@ -26,7 +26,7 @@
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.10";
+const ENGINE_RUNTIME_VERSION = "4.9.11";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1159,7 +1159,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.10",
+        version: "4.9.11",
         reason: "single_skin_temperature_flip"
       }
     };
@@ -1221,7 +1221,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.10",
+        version: "4.9.11",
         reason: "skin_eye_temperature_conflict_confidence_guard",
         classification_preserved: result.classification
       }
@@ -1233,7 +1233,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.10"
+      version: "4.9.11"
     }
   };
 }
@@ -1723,10 +1723,30 @@ function calculateChroma(config, features, quality, reliability) {
     scores
   );
 
-  if (used >= adjustedMinimum && ordered.length >= 2) {
+  const scoreGap = ordered.length >= 2
+    ? Number(ordered[0]?.[1] || 0) - Number(ordered[1]?.[1] || 0)
+    : 0;
+  const evidenceRatio = adjustedMinimum > 0
+    ? used / adjustedMinimum
+    : 1;
+
+  // v4.9.11: a very strong score lead may compensate for a small shortfall
+  // in total evidence weight. This is deliberately conservative: it only
+  // activates when at least 90% of the required evidence is present and the
+  // leading chroma family is ahead by 20+ points. Ordinary close or moderate
+  // leads still require the normal minimum evidence threshold.
+  const decisiveLeadOverride =
+    ordered.length >= 2 &&
+    used < adjustedMinimum &&
+    evidenceRatio >= 0.90 &&
+    scoreGap >= 20;
+
+  const passedEvidenceGate =
+    used >= adjustedMinimum || decisiveLeadOverride;
+
+  if (passedEvidenceGate && ordered.length >= 2) {
     const [firstName, firstScore] = ordered[0];
-    const secondScore = ordered[1][1];
-    const gap = firstScore - secondScore;
+    const gap = scoreGap;
     const lowCoverageCloseRace =
       Number(chromaMetrics.coverage || 0) < 0.60 &&
       gap < 10;
@@ -1750,21 +1770,20 @@ function calculateChroma(config, features, quality, reliability) {
   const confidence = metrics.confidence;
 
   const chromaDecisionReason =
-    used < adjustedMinimum
-      ? "insufficient_total_evidence_weight"
-      : ordered.length < 2
-        ? "insufficient_scored_categories"
-        : (
-            chromaMetrics.coverage < 0.60 &&
-            (
-              Number(ordered[0]?.[1] || 0) -
-              Number(ordered[1]?.[1] || 0)
-            ) < 10
-          )
-          ? "low_coverage_close_race"
-          : classification !== "uncertain"
-            ? "classified_from_score_lead"
-            : "insufficient_score_separation";
+    decisiveLeadOverride && classification !== "uncertain"
+      ? "classified_from_decisive_lead_override"
+      : !passedEvidenceGate
+        ? "insufficient_total_evidence_weight"
+        : ordered.length < 2
+          ? "insufficient_scored_categories"
+          : (
+              chromaMetrics.coverage < 0.60 &&
+              scoreGap < 10
+            )
+            ? "low_coverage_close_race"
+            : classification !== "uncertain"
+              ? "classified_from_score_lead"
+              : "insufficient_score_separation";
 
   return {
     classification,
@@ -1777,6 +1796,9 @@ function calculateChroma(config, features, quality, reliability) {
       used_weight: round(used, 4),
       minimum_required_weight: round(adjustedMinimum, 4),
       passed_minimum_evidence: used >= adjustedMinimum,
+      passed_effective_evidence_gate: passedEvidenceGate,
+      decisive_lead_override_applied: decisiveLeadOverride,
+      evidence_ratio_to_minimum: round(evidenceRatio, 3),
       score_leader: ordered[0]?.[0] || null,
       score_leader_value: ordered[0]
         ? round(Number(ordered[0][1] || 0), 2)
@@ -2342,6 +2364,63 @@ function coreTraitSupport(seasonId, dims, features = {}) {
     };
   }
 
+  // v4.9.11: True Winter is not defined by cool temperature alone.
+  // It also needs enough chroma/contrast intensity to separate it from
+  // True/Soft Summer when temperature is cool but the appearance is muted
+  // or only medium in contrast.
+  if (seasonId === "true_winter") {
+    const chroma = dims?.chroma || {};
+    const contrast = dims?.contrast || {};
+
+    const temperatureSupport = ({
+      cool: 1.00,
+      neutral_cool: 0.80,
+      neutral: 0.35,
+      neutral_warm: 0.10,
+      warm: 0
+    })[classification];
+
+    const chromaSupport = normalizedMass(chroma.scores, {
+      bright: 1.00,
+      clear: 0.65,
+      balanced: 0.15,
+      soft: 0.03,
+      muted: 0
+    });
+
+    const contrastSupport = normalizedMass(contrast.scores, {
+      high: 1.00,
+      medium: 0.35,
+      low: 0
+    });
+
+    if (temperatureSupport === undefined ||
+        chromaSupport === null ||
+        contrastSupport === null) {
+      return null;
+    }
+
+    return {
+      dimension: "temperature+chroma+contrast",
+      support: clamp(
+        0.55 * temperatureSupport +
+        0.25 * chromaSupport +
+        0.20 * contrastSupport
+      ),
+      confidence: clamp(
+        0.50 * Number(result.confidence || 0) +
+        0.30 * Number(chroma.confidence || 0) +
+        0.20 * Number(contrast.confidence || 0)
+      ),
+      mode: "true_winter_composite",
+      components: {
+        temperature: round(temperatureSupport, 3),
+        chroma: round(chromaSupport, 3),
+        contrast: round(contrastSupport, 3)
+      }
+    };
+  }
+
   if (rule.family === "cool") {
     const support = {
       cool: 1,
@@ -2494,6 +2573,14 @@ function applyCoreTraitGuards(scores, dims, features = {}) {
       } else if (core.support < 0.40) {
         penalty = 15;
       } else if (core.support < 0.50) {
+        penalty = 8;
+      }
+    } else if (season === "true_winter" && core.mode === "true_winter_composite") {
+      if (core.support < 0.32 && core.confidence >= 0.60) {
+        penalty = 22;
+      } else if (core.support < 0.48) {
+        penalty = 15;
+      } else if (core.support < 0.62) {
         penalty = 8;
       }
     } else if (["light_spring", "light_summer", "deep_autumn", "deep_winter"].includes(season)) {
@@ -3253,13 +3340,29 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
   }
 
   const strongCount = dimensions.filter(x => x.strong).length;
-  if (strongCount < 3 && dimensions.filter(x => x.usable).length >= 3) {
+  const usableCount = dimensions.filter(x => x.usable).length;
+  if (strongCount < 3 && usableCount >= 3) {
     const penalty = strongCount <= 1 ? 0.05 : 0.03;
     finalScore -= penalty;
     penalties.push({
       type: "limited_strong_dimensions",
       value: -penalty,
       strong_dimensions: strongCount
+    });
+  }
+
+  // v4.9.11: two usable dimensions are not enough evidence for a High
+  // confidence label even when the season gap is large. Keep the ranking,
+  // but cap the confidence at Medium and explicitly expose the reason.
+  if (usableCount === 2 && finalScore > 0.60) {
+    const beforeCap = finalScore;
+    finalScore = 0.60;
+    penalties.push({
+      type: "two_usable_dimensions_confidence_cap",
+      value: -round(beforeCap - finalScore, 3),
+      confidence_before_cap: round(beforeCap, 3),
+      confidence_cap: 0.60,
+      usable_dimensions: usableCount
     });
   }
 
@@ -3283,7 +3386,7 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
     version: "2.1",
     score: round(finalScore, 3),
     level,
-    usable_dimensions: dimensions.filter(x => x.usable).length,
+    usable_dimensions: usableCount,
     strong_dimensions: dimensions.filter(x => x.strong).length,
     components: {
       gap_score: round(gapScore, 3),
@@ -3370,7 +3473,7 @@ function runScoring(config,dims,quality,features) {
 
   const requestBetterPhoto=
     quality==="poor" ||
-    usableDimensions<2 ||
+    usableDimensions<3 ||
     conf.level==="very_low" ||
     confusion.unresolved ||
     (
@@ -3380,13 +3483,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.10",
+    stability_fix_version: "4.9.11",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.10 + season scoring respects reliability score-separation caps + diagnostic guard entries excluded from conflict penalties + chroma gate diagnostics + calibrated core guards",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.11 + season scoring respects reliability score-separation caps + diagnostic guard entries excluded from conflict penalties + adaptive chroma evidence gate + True Winter composite guard + calibrated core guards",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
