@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.12 RC
+ * DiArt Color Engine v4.9.13 RC
  * Production-hardening candidate for Make Code.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.12";
+const ENGINE_RUNTIME_VERSION = "4.9.13";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1159,7 +1159,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.12",
+        version: "4.9.13",
         reason: "single_skin_temperature_flip"
       }
     };
@@ -1221,7 +1221,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.12",
+        version: "4.9.13",
         reason: "skin_eye_temperature_conflict_confidence_guard",
         classification_preserved: result.classification
       }
@@ -1233,7 +1233,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.12"
+      version: "4.9.13"
     }
   };
 }
@@ -1731,7 +1731,7 @@ function calculateChroma(config, features, quality, reliability) {
     ? used / adjustedMinimum
     : 1;
 
-  // v4.9.12: continuous Chroma evidence gate.
+  // v4.9.13: continuous Chroma evidence gate.
   // Do not create a cliff when evidence misses the nominal threshold by
   // fractions of a percent. A near-threshold case may classify with a
   // slightly reduced scoring weight. A larger shortfall requires a truly
@@ -1797,16 +1797,31 @@ function calculateChroma(config, features, quality, reliability) {
                 ? "classified_from_score_lead"
                 : "insufficient_score_separation";
 
+  function chromaEvidenceWeightFactor(ratio, coverage) {
+    const r = Math.max(0, Number(ratio || 0));
+    let factor;
+
+    if (r <= 0.90) factor = 0.55;
+    else if (r <= 0.95) factor = 0.55 + ((r - 0.90) / 0.05) * 0.20;
+    else if (r <= 1.00) factor = 0.75 + ((r - 0.95) / 0.05) * 0.10;
+    else if (r <= 1.05) factor = 0.85 + ((r - 1.00) / 0.05) * 0.10;
+    else if (r <= 1.10) factor = 0.95 + ((r - 1.05) / 0.05) * 0.05;
+    else factor = 1.00;
+
+    if (Number(coverage || 0) < 0.50) {
+      factor = Math.min(factor, 0.85);
+    }
+
+    return clamp(factor);
+  }
+
   const chromaScoringWeightFactor =
     classification === "uncertain"
       ? Number(config.scoring_algorithm?.uncertain_dimension_factor ?? 0.45)
-      : used >= adjustedMinimum
-        ? 1
-        : nearThresholdOverride
-          ? 0.92
-          : decisiveLeadOverride
-            ? 0.75
-            : 1;
+      : chromaEvidenceWeightFactor(
+          evidenceRatio,
+          chromaMetrics.coverage
+        );
 
   return {
     classification,
@@ -2292,6 +2307,23 @@ function temperatureDistributionMatchValue(result, seasonId) {
   return round(clamp(expected), 4);
 }
 
+function valueSeasonCompatibility(seasonId) {
+  const profiles = {
+    light_spring: { light: 1.00, medium: 0.60, deep: 0.08 },
+    light_summer: { light: 1.00, medium: 0.60, deep: 0.08 },
+
+    true_spring:  { light: 0.72, medium: 1.00, deep: 0.20 },
+    true_summer:  { light: 0.72, medium: 1.00, deep: 0.20 },
+
+    true_autumn:  { light: 0.18, medium: 1.00, deep: 0.72 },
+
+    deep_autumn:  { light: 0.08, medium: 0.62, deep: 1.00 },
+    deep_winter:  { light: 0.08, medium: 0.62, deep: 1.00 }
+  };
+
+  return profiles[seasonId] || null;
+}
+
 function distributionMatchValue(config, dimension, result, profile, seasonId) {
   if (dimension === "temperature") {
     return temperatureDistributionMatchValue(
@@ -2314,16 +2346,28 @@ function distributionMatchValue(config, dimension, result, profile, seasonId) {
   const total = entries.reduce((sum, [, score]) => sum + score, 0);
   if (total <= 0) return null;
 
+  const valueCompatibility =
+    dimension === "value"
+      ? valueSeasonCompatibility(seasonId)
+      : null;
+
   let expected = 0;
   for (const [candidate, score] of entries) {
-    const candidateMatch = matchValue(
-      config,
-      dimension,
-      candidate,
-      profile
-    );
-    if (candidateMatch === null) continue;
-    expected += (score / total) * candidateMatch;
+    const candidateMatch =
+      valueCompatibility && Object.prototype.hasOwnProperty.call(valueCompatibility, candidate)
+        ? Number(valueCompatibility[candidate])
+        : matchValue(
+            config,
+            dimension,
+            candidate,
+            profile
+          );
+
+    if (candidateMatch === null || !Number.isFinite(Number(candidateMatch))) {
+      continue;
+    }
+
+    expected += (score / total) * Number(candidateMatch);
   }
 
   return round(clamp(expected), 4);
@@ -2367,7 +2411,7 @@ function normalizedMass(scores, weightedTargets) {
   return clamp(support);
 }
 
-function coreTraitSupport(seasonId, dims, features = {}) {
+function coreTraitSupport(seasonId, dims, features = {}, config = {}) {
   const rule = coreTraitRule(seasonId);
   if (!rule) return null;
 
@@ -2376,18 +2420,12 @@ function coreTraitSupport(seasonId, dims, features = {}) {
   const classification = result.classification;
 
   if (rule.family === "warm") {
-    const support = {
-      warm: 1,
-      neutral_warm: 0.80,
-      neutral: 0.35,
-      neutral_cool: 0.10,
-      cool: 0
-    }[classification];
-    return support === undefined ? null : {
+    const support = temperatureDistributionMatchValue(result, seasonId);
+    return support === null ? null : {
       dimension: rule.dimension,
       support,
       confidence,
-      mode: "temperature_family"
+      mode: "temperature_distribution"
     };
   }
 
@@ -2399,13 +2437,8 @@ function coreTraitSupport(seasonId, dims, features = {}) {
     const chroma = dims?.chroma || {};
     const contrast = dims?.contrast || {};
 
-    const temperatureSupport = ({
-      cool: 1.00,
-      neutral_cool: 0.80,
-      neutral: 0.35,
-      neutral_warm: 0.10,
-      warm: 0
-    })[classification];
+    const temperatureSupport =
+      temperatureDistributionMatchValue(result, seasonId);
 
     const chromaSupport = normalizedMass(chroma.scores, {
       bright: 1.00,
@@ -2430,14 +2463,14 @@ function coreTraitSupport(seasonId, dims, features = {}) {
     return {
       dimension: "temperature+chroma+contrast",
       support: clamp(
-        0.55 * temperatureSupport +
-        0.25 * chromaSupport +
-        0.20 * contrastSupport
+        0.40 * temperatureSupport +
+        0.35 * chromaSupport +
+        0.25 * contrastSupport
       ),
       confidence: clamp(
-        0.50 * Number(result.confidence || 0) +
-        0.30 * Number(chroma.confidence || 0) +
-        0.20 * Number(contrast.confidence || 0)
+        0.40 * Number(result.confidence || 0) +
+        0.35 * Number(chroma.confidence || 0) +
+        0.25 * Number(contrast.confidence || 0)
       ),
       mode: "true_winter_composite",
       components: {
@@ -2449,18 +2482,12 @@ function coreTraitSupport(seasonId, dims, features = {}) {
   }
 
   if (rule.family === "cool") {
-    const support = {
-      cool: 1,
-      neutral_cool: 0.80,
-      neutral: 0.35,
-      neutral_warm: 0.10,
-      warm: 0
-    }[classification];
-    return support === undefined ? null : {
+    const support = temperatureDistributionMatchValue(result, seasonId);
+    return support === null ? null : {
       dimension: rule.dimension,
       support,
       confidence,
-      mode: "temperature_family"
+      mode: "temperature_distribution"
     };
   }
 
@@ -2524,11 +2551,25 @@ function coreTraitSupport(seasonId, dims, features = {}) {
       clear: 0.10,
       bright: 0
     });
-    return support === null ? null : {
+
+    const clearBrightSupport = normalizedMass(result.scores, {
+      bright: 1.00,
+      clear: 1.00,
+      balanced: 0.35,
+      soft: 0.05,
+      muted: 0
+    });
+
+    return support === null || clearBrightSupport === null ? null : {
       dimension: "chroma",
       support,
       confidence,
-      mode: "soft_adjacent_balanced"
+      mode: "soft_distribution_contrast",
+      components: {
+        soft_muted: round(support, 3),
+        clear_bright: round(clearBrightSupport, 3),
+        clear_over_soft: round(clearBrightSupport - support, 3)
+      }
     };
   }
 
@@ -2563,6 +2604,14 @@ function coreTraitSupport(seasonId, dims, features = {}) {
       dimension: rule.dimension,
       support,
       confidence,
+      classification,
+      target: rule.target || null,
+      target_score: rule.target
+        ? Math.max(0, Number(scores[rule.target] || 0))
+        : null,
+      opposite_score: oppositeTarget
+        ? Math.max(0, Number(scores[oppositeTarget] || 0))
+        : null,
       mode: "target_mass",
       opposite_support: oppositeSupport
     };
@@ -2580,14 +2629,14 @@ function coreTraitSupport(seasonId, dims, features = {}) {
   return null;
 }
 
-function applyCoreTraitGuards(scores, dims, features = {}) {
+function applyCoreTraitGuards(config, scores, dims, features = {}) {
   const adjusted = { ...scores };
   const applied = Object.fromEntries(
     Object.keys(scores).map(season => [season, []])
   );
 
   for (const season of Object.keys(adjusted)) {
-    const core = coreTraitSupport(season, dims, features);
+    const core = coreTraitSupport(season, dims, features, config);
     if (!core || core.confidence < 0.40) continue;
 
     let penalty = 0;
@@ -2603,25 +2652,57 @@ function applyCoreTraitGuards(scores, dims, features = {}) {
         penalty = 8;
       }
     } else if (season === "true_winter" && core.mode === "true_winter_composite") {
-      if (core.support < 0.32 && core.confidence >= 0.60) {
+      const weakWinterIntensity =
+        Number(core.components?.chroma ?? 0) < 0.45 &&
+        Number(core.components?.contrast ?? 0) < 0.45;
+
+      if (core.support < 0.30 && core.confidence >= 0.60) {
         penalty = 22;
-      } else if (core.support < 0.48) {
+      } else if (core.support < 0.42 || weakWinterIntensity) {
         penalty = 15;
-      } else if (core.support < 0.62) {
+      } else if (core.support < 0.55) {
         penalty = 8;
       }
     } else if (["light_spring", "light_summer", "deep_autumn", "deep_winter"].includes(season)) {
-      const closeOpposite = Number.isFinite(Number(core.opposite_support)) &&
-        Math.abs(Number(core.support) - Number(core.opposite_support)) < 0.08;
+      const targetScore = Number(core.target_score);
+      const oppositeScore = Number(core.opposite_score);
+      const selectedTarget = core.classification === core.target;
 
-      if (core.support < 0.12 && core.confidence >= 0.60) {
-        penalty = 22;
-      } else if (core.support < 0.25) {
+      if (!selectedTarget &&
+          Number.isFinite(targetScore) &&
+          Number.isFinite(oppositeScore)) {
+        const oppositeLead = oppositeScore - targetScore;
+
+        if (oppositeLead >= 25 && core.confidence >= 0.60) {
+          penalty = 22;
+        } else if (oppositeLead >= 15) {
+          penalty = 15;
+        } else if (oppositeLead >= 8) {
+          penalty = 8;
+        }
+      }
+    } else if (["soft_autumn", "soft_summer"].includes(season) &&
+               core.mode === "soft_distribution_contrast") {
+      const clearOverSoft = Number(core.components?.clear_over_soft ?? 0);
+
+      if (clearOverSoft >= 0.30 && core.confidence >= 0.60) {
+        penalty = 15;
+      } else if (clearOverSoft >= 0.15) {
+        penalty = 8;
+      } else if (core.support < 0.28) {
         penalty = 15;
       } else if (core.support < 0.40) {
-        penalty = closeOpposite ? 12 : 8;
-      } else if (core.support < 0.45 && closeOpposite) {
         penalty = 8;
+      }
+    } else if (core.mode === "temperature_distribution") {
+      if (core.support < 0.25 && core.confidence >= 0.60) {
+        penalty = 22;
+      } else if (core.support < 0.35) {
+        penalty = 15;
+      } else if (core.support < 0.45) {
+        penalty = 8;
+      } else if (core.support < 0.55) {
+        penalty = 4;
       }
     } else {
       if (core.support < 0.12 && core.confidence >= 0.60) {
@@ -2652,6 +2733,12 @@ function applyCoreTraitGuards(scores, dims, features = {}) {
       opposite_support: core.opposite_support === null || core.opposite_support === undefined
         ? undefined
         : round(core.opposite_support, 3),
+      target_score: Number.isFinite(Number(core.target_score))
+        ? round(Number(core.target_score), 2)
+        : undefined,
+      opposite_score: Number.isFinite(Number(core.opposite_score))
+        ? round(Number(core.opposite_score), 2)
+        : undefined,
       reason: "Primary seasonal characteristic is weakly supported by the observed evidence."
     });
   }
@@ -3078,23 +3165,9 @@ function resolveConfusion(config,ranking,dims,features) {
       { candidate:"true_autumn", type:"distribution_chroma", points:round(4*chromaAutumn,2), support:round(chromaAutumn,3) }
     ];
 
-    const hairDepth = features?.hair?.depth;
-    if (["medium_deep","deep","very_deep"].includes(hairDepth)) {
-      autumnPoints += 2;
-      evidence.push({ candidate:"true_autumn", type:"hair_depth", points:2, observed:hairDepth });
-    } else if (["very_light","light","light_medium"].includes(hairDepth)) {
-      springPoints += 2;
-      evidence.push({ candidate:"true_spring", type:"hair_depth", points:2, observed:hairDepth });
-    }
-
-    if (features?.eyebrows?.depth_relative_to_hair === "darker") {
-      autumnPoints += 1;
-      evidence.push({ candidate:"true_autumn", type:"darker_eyebrows", points:1 });
-    }
-
     const margin = Math.abs(springPoints - autumnPoints);
     const minimum = Math.max(
-      1.25,
+      1.50,
       Number(config.confusion_resolution?.generic_neighbor_rule?.minimum_decision_margin || 0)
     );
 
@@ -3121,6 +3194,31 @@ function resolveConfusion(config,ranking,dims,features) {
         true_spring:round(springPoints,2),
         true_autumn:round(autumnPoints,2)
       }
+    };
+  }
+
+  const adjacentPairs = new Set([
+    ["light_spring","true_spring"].sort().join("|"),
+    ["true_spring","true_autumn"].sort().join("|"),
+    ["true_autumn","deep_autumn"].sort().join("|"),
+    ["deep_autumn","deep_winter"].sort().join("|"),
+    ["light_summer","true_summer"].sort().join("|"),
+    ["true_summer","soft_summer"].sort().join("|"),
+    ["soft_summer","soft_autumn"].sort().join("|"),
+    ["light_spring","light_summer"].sort().join("|"),
+    ["bright_spring","bright_winter"].sort().join("|")
+  ]);
+
+  const adjacentKey = [a.season_id, b.season_id].sort().join("|");
+  if (adjacentPairs.has(adjacentKey)) {
+    return {
+      triggered: true,
+      pair_id: `adjacent_${adjacentKey.replace("|","_vs_")}`,
+      winner: null,
+      decision_margin: round(gap, 2),
+      unresolved: true,
+      applied_evidence: [],
+      reason: "adjacent_seasons_require_more_separation"
     };
   }
 
@@ -3232,13 +3330,26 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
     );
   }
 
-  const gapPoints =
+  const finalGapPoints =
     ranking.length > 1
       ? Math.abs(
           Number(ranking[0].score_after_modifiers || 0) -
           Number(ranking[1].score_after_modifiers || 0)
         )
       : 0;
+
+  const intrinsicGapPoints =
+    ranking.length > 1
+      ? Math.abs(
+          Number(ranking[0].base_score || 0) -
+          Number(ranking[1].base_score || 0)
+        )
+      : 0;
+
+  const gapPoints = Math.min(
+    intrinsicGapPoints,
+    finalGapPoints
+  );
 
   const gapScore = scoreGapComponent(gapPoints);
 
@@ -3429,6 +3540,8 @@ function finalConfidence(config,dims,ranking,quality,confusion) {
     },
     weights,
     score_gap_points: round(gapPoints, 1),
+    intrinsic_gap_points: round(intrinsicGapPoints, 1),
+    final_gap_points: round(finalGapPoints, 1),
     dimensions,
     penalties
   };
@@ -3441,7 +3554,7 @@ function runScoring(config,dims,quality,features) {
   const base = Object.fromEntries(
     Object.entries(baseDetails).map(([season, detail]) => [season, detail.score])
   );
-  const core = applyCoreTraitGuards(base, dims, adapted.features);
+  const core = applyCoreTraitGuards(config, base, dims, adapted.features);
   const cross = applyCrossRules(config, core.adjusted, dims);
   const excl = applyExclusions(config, cross.adjusted, dims, features);
   const ranking = Object.keys(profiles)
@@ -3496,12 +3609,37 @@ function runScoring(config,dims,quality,features) {
       Number(conf?.score || 0) < 0.65
     );
 
+  const realTemperatureConflicts =
+    Array.isArray(dims?.temperature?.conflicts)
+      ? dims.temperature.conflicts.filter(
+          item => item && item.type !== "temperature_conflict_confidence_guard"
+        ).length
+      : 0;
+
+  const intrinsicGapForRelease =
+    Number(conf?.intrinsic_gap_points || 0);
+
+  const releaseFinalEligible =
+    (
+      strongDimensions >= 3 &&
+      intrinsicGapForRelease >= 6 &&
+      !confusion.unresolved
+    ) ||
+    (
+      usableDimensions === 4 &&
+      strongDimensions >= 2 &&
+      intrinsicGapForRelease >= 10 &&
+      !confusion.unresolved &&
+      realTemperatureConflicts === 0
+    );
+
   const provisional=
     !noResult && (
       ["very_low","low"].includes(conf.level) ||
       confusion.unresolved ||
       resolvedConfusionStillClose ||
-      usableDimensions<3
+      usableDimensions<3 ||
+      !releaseFinalEligible
     );
 
   const requestBetterPhoto=
@@ -3509,6 +3647,7 @@ function runScoring(config,dims,quality,features) {
     usableDimensions<3 ||
     conf.level==="very_low" ||
     confusion.unresolved ||
+    !releaseFinalEligible ||
     (
       resolvedConfusionStillClose &&
       Number(conf?.score || 0) < 0.60
@@ -3516,13 +3655,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.12",
+    stability_fix_version: "4.9.13",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; temperature uses continuous raw-score distribution in v4.9.12 + hair naturalness is applied symmetrically to used/available evidence + continuous chroma evidence gate with near-threshold/decisive weight factors + season scoring respects reliability score-separation caps + diagnostic guard entries excluded from conflict penalties + True Winter composite guard + calibrated core guards",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; v4.9.13 adds season-specific Value invariants, relative Light/Deep guards, continuous Temperature core support, stricter True Winter/Soft guards, smooth Chroma evidence weighting, resolver de-duplication, intrinsic-gap confidence protection, and commercial release final-gate",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
@@ -3570,11 +3709,15 @@ function runScoring(config,dims,quality,features) {
       decision_status:noResult?"insufficient":provisional?"provisional":"final",
       usable_dimensions:usableDimensions,
       strong_dimensions:strongDimensions,
+      release_final_eligible:releaseFinalEligible,
       confidence_diagnostics:{
         version:conf.version,
         components:conf.components,
         weights:conf.weights,
         score_gap_points:conf.score_gap_points,
+        intrinsic_gap_points:conf.intrinsic_gap_points,
+        final_gap_points:conf.final_gap_points,
+        release_final_eligible:releaseFinalEligible,
         dimensions:conf.dimensions,
         penalties:conf.penalties
       },
