@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.15 RC
+ * DiArt Color Engine v4.9.16 RC
  * Production-hardening candidate for Make Code.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.15";
+const ENGINE_RUNTIME_VERSION = "4.9.16";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -224,7 +224,10 @@ function adaptExtractor(ex) {
         base_color: normalizeEyeColor(oc.eyes?.primary_color),
         temperature: eyeTemp,
         clarity: normalizeClarity(eyeChroma),
-        brightness: brightnessFromDepth(eyeDepth),
+        brightness:
+          ["high", "medium", "low"].includes(String(oc.eyes?.brightness || "").toLowerCase())
+            ? String(oc.eyes.brightness).toLowerCase()
+            : brightnessFromDepth(eyeDepth),
         iris_contrast: collapseContrast(
           oc.eyes?.iris_contrast ||
           cf.iris_contrast?.level ||
@@ -1159,7 +1162,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.15",
+        version: "4.9.16",
         reason: "single_skin_temperature_flip"
       }
     };
@@ -1221,7 +1224,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.15",
+        version: "4.9.16",
         reason: "skin_eye_temperature_conflict_confidence_guard",
         classification_preserved: result.classification
       }
@@ -1233,7 +1236,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.15"
+      version: "4.9.16"
     }
   };
 }
@@ -1731,7 +1734,7 @@ function calculateChroma(config, features, quality, reliability) {
     ? used / adjustedMinimum
     : 1;
 
-  // v4.9.15: continuous Chroma evidence gate.
+  // v4.9.16: continuous Chroma evidence gate.
   // Do not create a cliff when evidence misses the nominal threshold by
   // fractions of a percent. A near-threshold case may classify with a
   // slightly reduced scoring weight. A larger shortfall requires a truly
@@ -2682,7 +2685,7 @@ function applyCoreTraitGuards(config, scores, dims, features = {}) {
             penalty = 8;
           }
         } else {
-          // v4.9.15: a categorical Light/Deep win is not automatically a
+          // v4.9.16: a categorical Light/Deep win is not automatically a
           // strong dominant trait. When the opposite pole is still almost as
           // strong, apply only a small continuity penalty. This prevents a
           // 44-vs-37 Light/Deep race from behaving like a 65-vs-4 race.
@@ -2724,6 +2727,20 @@ function applyCoreTraitGuards(config, scores, dims, features = {}) {
       }
     }
 
+    // v4.9.16: True Summer should not win a clearly deep appearance solely
+    // because its cool-temperature and medium-contrast matches are strong.
+    // This guard is intentionally Value-dominance-aware: uncertain or weakly
+    // deep cases remain untouched, while moderate/strong deep evidence gets a
+    // proportional penalty.
+    if (season === "true_summer" && dims?.value?.classification === "deep") {
+      const dominance = valueDominanceStrength(dims);
+      const factor = Number(dominance?.factor || 0);
+      if (factor >= 0.60) {
+        const depthPenalty = factor >= 0.99 ? 15 : 9;
+        penalty = Math.max(penalty, depthPenalty);
+      }
+    }
+
     if (penalty <= 0) continue;
 
     adjusted[season] = clamp(
@@ -2749,7 +2766,12 @@ function applyCoreTraitGuards(config, scores, dims, features = {}) {
       opposite_score: Number.isFinite(Number(core.opposite_score))
         ? round(Number(core.opposite_score), 2)
         : undefined,
-      reason: "Primary seasonal characteristic is weakly supported by the observed evidence."
+      reason:
+        season === "true_summer" &&
+        dims?.value?.classification === "deep" &&
+        Number(valueDominanceStrength(dims)?.factor || 0) >= 0.60
+          ? "Deep overall value weakens True Summer and favors the deeper cool branch."
+          : "Primary seasonal characteristic is weakly supported by the observed evidence."
     });
   }
 
@@ -3218,7 +3240,8 @@ function contrastShares(dims) {
 function adjacentLightTrueResolver(lightSeason, trueSeason, dims, features) {
   const value = normalizedDimensionShares(dims?.value?.scores || {});
   const contrast = contrastShares(dims);
-  const hairFamily = collapseDepth(features?.hair?.depth);
+  const exactHairDepth = String(features?.hair?.depth || "unknown");
+  const hairFamily = collapseDepth(exactHairDepth);
   const eyeBrightness = features?.eyes?.brightness || "unknown";
   const temperatureClass = dims?.temperature?.classification || "uncertain";
   const lightFamily = lightSeason.endsWith("spring") ? "warm" : "cool";
@@ -3244,12 +3267,18 @@ function adjacentLightTrueResolver(lightSeason, trueSeason, dims, features) {
     add(trueSeason, "value_nonlight_share", 4 * (Number(value.medium || 0) + Number(value.deep || 0)), round((value.medium || 0) + (value.deep || 0), 3));
   }
 
-  if (hairFamily === "light") add(lightSeason, "hair_depth", 1.50, features?.hair?.depth);
-  else if (hairFamily === "medium") {
-    add(lightSeason, "hair_depth", 0.50, features?.hair?.depth);
-    add(trueSeason, "hair_depth", 0.75, features?.hair?.depth);
+  if (["very_light", "light"].includes(exactHairDepth)) {
+    add(lightSeason, "hair_depth", 1.50, exactHairDepth);
+  } else if (exactHairDepth === "light_medium") {
+    // Borderline light hair is not defining evidence for a Light season.
+    // Split the evidence instead of treating it like very-light/light hair.
+    add(lightSeason, "hair_depth", 0.55, exactHairDepth);
+    add(trueSeason, "hair_depth", 0.45, exactHairDepth);
+  } else if (hairFamily === "medium") {
+    add(lightSeason, "hair_depth", 0.35, exactHairDepth);
+    add(trueSeason, "hair_depth", 0.80, exactHairDepth);
   } else if (hairFamily === "deep") {
-    add(trueSeason, "hair_depth", 1.25, features?.hair?.depth);
+    add(trueSeason, "hair_depth", 1.25, exactHairDepth);
   }
 
   if (eyeBrightness === "high") add(lightSeason, "eye_brightness", 0.75, eyeBrightness);
@@ -3393,7 +3422,7 @@ function resolveConfusion(config,ranking,dims,features) {
       { candidate:"true_autumn", type:"distribution_chroma", points:round(4*chromaAutumn,2), support:round(chromaAutumn,3) }
     ];
 
-    // v4.9.15: use independent structural evidence only as a tie-breaker.
+    // v4.9.16: use independent structural evidence only as a tie-breaker.
     // This avoids forcing Autumn from hair alone, but prevents medium-deep
     // hair + darker brows from being ignored when Spring/Autumn distributions
     // are nearly tied.
@@ -3443,7 +3472,7 @@ function resolveConfusion(config,ranking,dims,features) {
     };
   }
 
-  // v4.9.15: explicit adjacent resolvers for the three recurrent
+  // v4.9.16: explicit adjacent resolvers for the three recurrent
   // calibration ambiguities. They use independent structure rather than
   // simply repeating the season score.
   if (pair.has("light_spring") && pair.has("true_spring")) {
@@ -3957,13 +3986,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.15",
+    stability_fix_version: "4.9.16",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; v4.9.15 scales Light/Deep rule severity by Value dominance, de-correlates depth evidence in the True Autumn↔Deep Autumn resolver, tightens opposite neutral-temperature family leakage, preserves smooth Chroma evidence weighting, and keeps commercial release final-gate",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; v4.9.16 keeps Value-dominance scaling, uses explicit eye brightness when available, removes the light_medium→Light resolver bias, adds a Value-aware True Summer depth guard, preserves smooth Chroma evidence weighting, and keeps the commercial release final-gate",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
