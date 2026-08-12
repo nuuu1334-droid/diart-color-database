@@ -21,12 +21,12 @@
  */
 
 /**
- * DiArt Color Engine v4.9.16 RC
+ * DiArt Color Engine v4.9.17 RC
  * Production-hardening candidate for Make Code.
  * Input: input.extractor, input.base_url
  */
 
-const ENGINE_RUNTIME_VERSION = "4.9.16";
+const ENGINE_RUNTIME_VERSION = "4.9.17";
 const extractor = input.extractor;
 const baseUrl = String(input.base_url || "https://raw.githubusercontent.com/nuuu1334-droid/diart-color-database/main").replace(/\/+$/, "");
 
@@ -1162,7 +1162,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.16",
+        version: "4.9.17",
         reason: "single_skin_temperature_flip"
       }
     };
@@ -1224,7 +1224,7 @@ function stabilizeTemperatureResult(result, extractorData) {
       },
       stability_guard: {
         applied: true,
-        version: "4.9.16",
+        version: "4.9.17",
         reason: "skin_eye_temperature_conflict_confidence_guard",
         classification_preserved: result.classification
       }
@@ -1236,7 +1236,7 @@ function stabilizeTemperatureResult(result, extractorData) {
     conflicts,
     stability_guard: {
       applied: false,
-      version: "4.9.16"
+      version: "4.9.17"
     }
   };
 }
@@ -2204,17 +2204,15 @@ function getDimensionWeights(config) {
 
 function resolveDimensionClassification(result) {
   if (!result || typeof result !== "object") return "uncertain";
-  if (!isUnknown(result.classification)) return result.classification;
 
-  const scores = result.scores;
-  if (!scores || typeof scores !== "object") return "uncertain";
-
-  const ordered = Object.entries(scores)
-    .filter(([, score]) => Number.isFinite(Number(score)))
-    .sort((a, b) => Number(b[1]) - Number(a[1]) || a[0].localeCompare(b[0]));
-
-  if (!ordered.length || Number(ordered[0][1]) <= 0) return "uncertain";
-  return ordered[0][0];
+  /*
+   * v4.9.17: an uncertain raw dimension must stay uncertain for categorical
+   * semantics and diagnostics. Its score distribution may still contribute
+   * through distributionMatchValue() at reduced weight, but the top bucket
+   * must never be promoted into a confirmed Light/Deep/Low/etc. trait.
+   */
+  if (isUnknown(result.classification)) return "uncertain";
+  return result.classification;
 }
 
 function matchValue(config, dimension, observed, profile) {
@@ -3107,6 +3105,45 @@ function isExtremeValueCondition(ev) {
 function conditionMatches(condition,dims,features={}) {
   return getConditionObservation(condition,dims,features).matched;
 }
+function applyUncertainExtremeValueRestraint(scores, dims) {
+  const adjusted = { ...scores };
+  const applied = Object.fromEntries(Object.keys(scores).map(s => [s, []]));
+
+  if (!isUnknown(dims?.value?.classification)) {
+    return { adjusted, applied };
+  }
+
+  const shares = normalizedDimensionShares(dims?.value?.scores || {});
+  const lightShare = Number(shares.light || 0);
+  const deepShare = Number(shares.deep || 0);
+  const extremeGap = Math.abs(lightShare - deepShare);
+
+  /*
+   * When Value is unresolved specifically between Light and Deep, neither
+   * extreme family is allowed to inherit a categorical advantage from the
+   * score leader. This restraint is symmetric, small, and disappears as soon
+   * as Value becomes categorical.
+   */
+  if (extremeGap > 0.10) return { adjusted, applied };
+
+  const penalty = 8;
+  for (const season of ["light_spring", "light_summer", "deep_autumn", "deep_winter"]) {
+    if (!(season in adjusted)) continue;
+    adjusted[season] = clamp(Number(adjusted[season] || 0) - penalty, 0, 100);
+    applied[season].push({
+      type: "uncertain_extreme_value_restraint",
+      dimension: "value",
+      points: -penalty,
+      light_share: round(lightShare, 3),
+      deep_share: round(deepShare, 3),
+      extreme_gap: round(extremeGap, 3),
+      reason: "Value is unresolved between Light and Deep; extreme seasons must not inherit a categorical fallback advantage."
+    });
+  }
+
+  return { adjusted, applied };
+}
+
 function applyCrossRules(config,scores,dims) {
   const adjusted={...scores}, applied=Object.fromEntries(Object.keys(scores).map(s=>[s,[]]));
   const scale=config.exclusion_rules?.penalty_scale||{};
@@ -3476,6 +3513,17 @@ function resolveConfusion(config,ranking,dims,features) {
   // calibration ambiguities. They use independent structure rather than
   // simply repeating the season score.
   if (pair.has("light_spring") && pair.has("true_spring")) {
+    if (isUnknown(dims?.value?.classification)) {
+      return {
+        triggered: true,
+        pair_id: "adjacent_light_spring_vs_true_spring",
+        winner: null,
+        decision_margin: round(gap, 2),
+        unresolved: true,
+        applied_evidence: [],
+        reason: "value_dimension_uncertain_no_light_true_adjudication"
+      };
+    }
     const resolved = adjacentLightTrueResolver("light_spring", "true_spring", dims, features);
     const minimum = 0.70;
     return {
@@ -3491,6 +3539,17 @@ function resolveConfusion(config,ranking,dims,features) {
   }
 
   if (pair.has("light_summer") && pair.has("true_summer")) {
+    if (isUnknown(dims?.value?.classification)) {
+      return {
+        triggered: true,
+        pair_id: "adjacent_light_summer_vs_true_summer",
+        winner: null,
+        decision_margin: round(gap, 2),
+        unresolved: true,
+        applied_evidence: [],
+        reason: "value_dimension_uncertain_no_light_true_adjudication"
+      };
+    }
     const resolved = adjacentLightTrueResolver("light_summer", "true_summer", dims, features);
     const minimum = 0.70;
     return {
@@ -3886,7 +3945,8 @@ function runScoring(config,dims,quality,features) {
     Object.entries(baseDetails).map(([season, detail]) => [season, detail.score])
   );
   const core = applyCoreTraitGuards(config, base, dims, adapted.features);
-  const cross = applyCrossRules(config, core.adjusted, dims);
+  const uncertainExtremeValue = applyUncertainExtremeValueRestraint(core.adjusted, dims);
+  const cross = applyCrossRules(config, uncertainExtremeValue.adjusted, dims);
   const excl = applyExclusions(config, cross.adjusted, dims, features);
   const ranking = Object.keys(profiles)
     .map(season => ({
@@ -3905,6 +3965,7 @@ function runScoring(config,dims,quality,features) {
         baseDetails[season].reliability_aware,
       applied_rules: [
         ...core.applied[season],
+        ...uncertainExtremeValue.applied[season],
         ...cross.applied[season],
         ...excl.applied[season]
       ]
@@ -3986,13 +4047,13 @@ function runScoring(config,dims,quality,features) {
 
   const scoringDiagnostics = {
     mode: "reliability_aware",
-    stability_fix_version: "4.9.16",
+    stability_fix_version: "4.9.17",
     temperature_conflicts:
       Array.isArray(dims.temperature?.conflicts)
         ? dims.temperature.conflicts
         : [],
     formula:
-      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; v4.9.16 keeps Value-dominance scaling, uses explicit eye brightness when available, removes the light_medium→Light resolver bias, adds a Value-aware True Summer depth guard, preserves smooth Chroma evidence weighting, and keeps the commercial release final-gate",
+      "base_weight × dimension_confidence × reliability × score_separation_factor × classification_factor × distribution_match; v4.9.17 keeps uncertain dimensions categorically uncertain, uses their distributions only at reduced weight, blocks Light-vs-True adjudication when Value is uncertain, symmetrically restrains Light/Deep seasons when unresolved Value is split between both extremes, and keeps the commercial release final-gate",
     uncertain_dimension_factor: Number(
       config.scoring_algorithm?.uncertain_dimension_factor ??
       0.45
