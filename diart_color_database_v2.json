@@ -310,9 +310,9 @@
       }
     },
     {
-      "code": "warm_spring",
-      "name_en": "Warm Spring",
-      "name_ru": "Теплая весна",
+      "code": "true_spring",
+      "name_en": "True Spring",
+      "name_ru": "Истинная весна",
       "season": "Spring",
       "temperature": "Warm",
       "value": "Medium-Light",
@@ -329,7 +329,7 @@
           "hex": "#FFF0C2",
           "name_en": "Cream",
           "name_ru": "Кремовый",
-          "id": "warm_spring_01",
+          "id": "true_spring_01",
           "order": 1,
           "role": "light_neutral"
         },
@@ -337,7 +337,7 @@
           "hex": "#E7B86D",
           "name_en": "Golden Beige",
           "name_ru": "Золотистый беж",
-          "id": "warm_spring_02",
+          "id": "true_spring_02",
           "order": 2,
           "role": "neutral"
         },
@@ -345,7 +345,7 @@
           "hex": "#F5C542",
           "name_en": "Sunflower",
           "name_ru": "Подсолнечный",
-          "id": "warm_spring_03",
+          "id": "true_spring_03",
           "order": 3,
           "role": "signature"
         },
@@ -353,7 +353,7 @@
           "hex": "#F39A3D",
           "name_en": "Apricot",
           "name_ru": "Абрикосовый",
-          "id": "warm_spring_04",
+          "id": "true_spring_04",
           "order": 4,
           "role": "accent"
         },
@@ -361,7 +361,7 @@
           "hex": "#E96F4C",
           "name_en": "Warm Coral",
           "name_ru": "Теплый коралл",
-          "id": "warm_spring_05",
+          "id": "true_spring_05",
           "order": 5,
           "role": "accent"
         },
@@ -369,7 +369,7 @@
           "hex": "#D9504F",
           "name_en": "Tomato Red",
           "name_ru": "Томатно-красный",
-          "id": "warm_spring_06",
+          "id": "true_spring_06",
           "order": 6,
           "role": "accent"
         },
@@ -377,7 +377,7 @@
           "hex": "#A9C95A",
           "name_en": "Leaf Green",
           "name_ru": "Листовой зеленый",
-          "id": "warm_spring_07",
+          "id": "true_spring_07",
           "order": 7,
           "role": "signature"
         },
@@ -385,7 +385,7 @@
           "hex": "#66B66C",
           "name_en": "Spring Green",
           "name_ru": "Весенний зеленый",
-          "id": "warm_spring_08",
+          "id": "true_spring_08",
           "order": 8,
           "role": "signature"
         },
@@ -393,7 +393,7 @@
           "hex": "#38B4A6",
           "name_en": "Turquoise",
           "name_ru": "Бирюзовый",
-          "id": "warm_spring_09",
+          "id": "true_spring_09",
           "order": 9,
           "role": "accent"
         },
@@ -401,7 +401,7 @@
           "hex": "#4EB8D1",
           "name_en": "Warm Aqua",
           "name_ru": "Теплая аква",
-          "id": "warm_spring_10",
+          "id": "true_spring_10",
           "order": 10,
           "role": "accent"
         },
@@ -409,7 +409,7 @@
           "hex": "#B86F3A",
           "name_en": "Cinnamon",
           "name_ru": "Корица",
-          "id": "warm_spring_11",
+          "id": "true_spring_11",
           "order": 11,
           "role": "dark_neutral"
         },
@@ -417,7 +417,7 @@
           "hex": "#7A5A35",
           "name_en": "Warm Brown",
           "name_ru": "Теплый коричневый",
-          "id": "warm_spring_12",
+          "id": "true_spring_12",
           "order": 12,
           "role": "dark_neutral"
         }
@@ -499,8 +499,8 @@
         ]
       },
       "display": {
-        "title_ru": "Тёплая весна",
-        "title_en": "Warm Spring",
+        "title_ru": "Истинная весна",
+        "title_en": "True Spring",
         "meaning_ru": "Выраженно тёплый, солнечный и чистый колорит.",
         "card_description": "Теплый, солнечный и живой цветотип. Особенно хороши чистые золотистые, фруктовые и бирюзовые оттенки."
       },
@@ -602,7 +602,7 @@
         "page_2_title": "Твоя палитра",
         "show_analysis_date": true,
         "show_passport_id": true,
-        "passport_id_prefix": "WARM-SPRING"
+        "passport_id_prefix": "TRUE-SPRING"
       }
     },
     {
@@ -1196,9 +1196,9 @@
       }
     },
     {
-      "code": "cool_summer",
-      "name_en": "Cool Summer",
-      "name_ru": "Холодное лето",
+      "code": "true_summer",
+      "name_en": "True Summer",
+      "name_ru": "Истинное лето",
       "season": "Summer",
       "temperature": "Cool",
       "value": "Medium",
@@ -1215,7 +1215,7 @@
           "hex": "#F1EEF0",
           "name_en": "Cool Soft White",
           "name_ru": "Холодный мягкий белый",
-          "id": "cool_summer_01",
+          "id": "true_summer_01",
           "order": 1,
           "role": "light_neutral"
         },
@@ -1223,7 +1223,7 @@
           "hex": "#B8B7C0",
           "name_en": "Cool Grey",
           "name_ru": "Холодный серый",
-          "id": "cool_summer_02",
+          "id": "true_summer_02",
           "order": 2,
           "role": "neutral"
         },
@@ -1231,7 +1231,7 @@
           "hex": "#8B8090",
           "name_en": "Plum Taupe",
           "name_ru": "Сливовый тауп",
-          "id": "cool_summer_03",
+          "id": "true_summer_03",
           "order": 3,
           "role": "signature"
         },
@@ -1239,7 +1239,7 @@
           "hex": "#C98FA6",
           "name_en": "Cool Rose",
           "name_ru": "Холодная роза",
-          "id": "cool_summer_04",
+          "id": "true_summer_04",
           "order": 4,
           "role": "accent"
         },
@@ -1247,7 +1247,7 @@
           "hex": "#A85E78",
           "name_en": "Raspberry",
           "name_ru": "Малиновый",
-          "id": "cool_summer_05",
+          "id": "true_summer_05",
           "order": 5,
           "role": "accent"
         },
@@ -1255,7 +1255,7 @@
           "hex": "#7E4A68",
           "name_en": "Muted Berry",
           "name_ru": "Приглушенный ягодный",
-          "id": "cool_summer_06",
+          "id": "true_summer_06",
           "order": 6,
           "role": "accent"
         },
@@ -1263,7 +1263,7 @@
           "hex": "#8787B8",
           "name_en": "Blue Violet",
           "name_ru": "Сине-фиолетовый",
-          "id": "cool_summer_07",
+          "id": "true_summer_07",
           "order": 7,
           "role": "signature"
         },
@@ -1271,7 +1271,7 @@
           "hex": "#5E76A8",
           "name_en": "Cornflower Blue",
           "name_ru": "Васильковый",
-          "id": "cool_summer_08",
+          "id": "true_summer_08",
           "order": 8,
           "role": "signature"
         },
@@ -1279,7 +1279,7 @@
           "hex": "#527A95",
           "name_en": "Steel Blue",
           "name_ru": "Стальной синий",
-          "id": "cool_summer_09",
+          "id": "true_summer_09",
           "order": 9,
           "role": "accent"
         },
@@ -1287,7 +1287,7 @@
           "hex": "#5C8E8A",
           "name_en": "Cool Teal",
           "name_ru": "Холодный тил",
-          "id": "cool_summer_10",
+          "id": "true_summer_10",
           "order": 10,
           "role": "accent"
         },
@@ -1295,7 +1295,7 @@
           "hex": "#75927D",
           "name_en": "Cool Green",
           "name_ru": "Холодный зеленый",
-          "id": "cool_summer_11",
+          "id": "true_summer_11",
           "order": 11,
           "role": "dark_neutral"
         },
@@ -1303,7 +1303,7 @@
           "hex": "#46566D",
           "name_en": "Soft Navy",
           "name_ru": "Мягкий темно-синий",
-          "id": "cool_summer_12",
+          "id": "true_summer_12",
           "order": 12,
           "role": "dark_neutral"
         }
@@ -1384,8 +1384,8 @@
         ]
       },
       "display": {
-        "title_ru": "Холодное лето",
-        "title_en": "Cool Summer",
+        "title_ru": "Истинное лето",
+        "title_en": "True Summer",
         "meaning_ru": "Выраженно прохладный, сдержанный и мягко-контрастный колорит.",
         "card_description": "Холодный, сдержанный и элегантный цветотип. Лучше всего выглядит в прохладных ягодных, синих и серо-розовых оттенках."
       },
@@ -1487,7 +1487,7 @@
         "page_2_title": "Твоя палитра",
         "show_analysis_date": true,
         "show_passport_id": true,
-        "passport_id_prefix": "COOL-SUMMER"
+        "passport_id_prefix": "TRUE-SUMMER"
       }
     },
     {
@@ -2085,9 +2085,9 @@
       }
     },
     {
-      "code": "warm_autumn",
-      "name_en": "Warm Autumn",
-      "name_ru": "Теплая осень",
+      "code": "true_autumn",
+      "name_en": "True Autumn",
+      "name_ru": "Истинная осень",
       "season": "Autumn",
       "temperature": "Warm",
       "value": "Medium-Deep",
@@ -2104,7 +2104,7 @@
           "hex": "#F1DFC2",
           "name_en": "Warm Cream",
           "name_ru": "Теплый кремовый",
-          "id": "warm_autumn_01",
+          "id": "true_autumn_01",
           "order": 1,
           "role": "light_neutral"
         },
@@ -2112,7 +2112,7 @@
           "hex": "#D2A85C",
           "name_en": "Golden Camel",
           "name_ru": "Золотистый кэмел",
-          "id": "warm_autumn_02",
+          "id": "true_autumn_02",
           "order": 2,
           "role": "neutral"
         },
@@ -2120,7 +2120,7 @@
           "hex": "#C68B2C",
           "name_en": "Mustard",
           "name_ru": "Горчичный",
-          "id": "warm_autumn_03",
+          "id": "true_autumn_03",
           "order": 3,
           "role": "signature"
         },
@@ -2128,7 +2128,7 @@
           "hex": "#C96B2B",
           "name_en": "Pumpkin",
           "name_ru": "Тыквенный",
-          "id": "warm_autumn_04",
+          "id": "true_autumn_04",
           "order": 4,
           "role": "accent"
         },
@@ -2136,7 +2136,7 @@
           "hex": "#B6532E",
           "name_en": "Rust",
           "name_ru": "Ржаво-терракотовый",
-          "id": "warm_autumn_05",
+          "id": "true_autumn_05",
           "order": 5,
           "role": "accent"
         },
@@ -2144,7 +2144,7 @@
           "hex": "#9E4F3A",
           "name_en": "Brick",
           "name_ru": "Кирпичный",
-          "id": "warm_autumn_06",
+          "id": "true_autumn_06",
           "order": 6,
           "role": "accent"
         },
@@ -2152,7 +2152,7 @@
           "hex": "#8C7A32",
           "name_en": "Golden Olive",
           "name_ru": "Золотистая олива",
-          "id": "warm_autumn_07",
+          "id": "true_autumn_07",
           "order": 7,
           "role": "signature"
         },
@@ -2160,7 +2160,7 @@
           "hex": "#61733B",
           "name_en": "Moss",
           "name_ru": "Мох",
-          "id": "warm_autumn_08",
+          "id": "true_autumn_08",
           "order": 8,
           "role": "signature"
         },
@@ -2168,7 +2168,7 @@
           "hex": "#3F7465",
           "name_en": "Warm Teal",
           "name_ru": "Теплый тил",
-          "id": "warm_autumn_09",
+          "id": "true_autumn_09",
           "order": 9,
           "role": "accent"
         },
@@ -2176,7 +2176,7 @@
           "hex": "#406C73",
           "name_en": "Petrol Blue",
           "name_ru": "Петрольный синий",
-          "id": "warm_autumn_10",
+          "id": "true_autumn_10",
           "order": 10,
           "role": "accent"
         },
@@ -2184,7 +2184,7 @@
           "hex": "#7B4D32",
           "name_en": "Cognac",
           "name_ru": "Коньячный",
-          "id": "warm_autumn_11",
+          "id": "true_autumn_11",
           "order": 11,
           "role": "dark_neutral"
         },
@@ -2192,7 +2192,7 @@
           "hex": "#4A3528",
           "name_en": "Dark Chocolate",
           "name_ru": "Темный шоколад",
-          "id": "warm_autumn_12",
+          "id": "true_autumn_12",
           "order": 12,
           "role": "dark_neutral"
         }
@@ -2279,8 +2279,8 @@
         ]
       },
       "display": {
-        "title_ru": "Тёплая осень",
-        "title_en": "Warm Autumn",
+        "title_ru": "Истинная осень",
+        "title_en": "True Autumn",
         "meaning_ru": "Выраженно тёплый, насыщенный и землистый колорит.",
         "card_description": "Выраженно теплый, насыщенный природный цветотип. Его украшают осенние оттенки золота, меди, мха и пряностей."
       },
@@ -2382,7 +2382,7 @@
         "page_2_title": "Твоя палитра",
         "show_analysis_date": true,
         "show_passport_id": true,
-        "passport_id_prefix": "WARM-AUTUMN"
+        "passport_id_prefix": "TRUE-AUTUMN"
       }
     },
     {
@@ -2987,9 +2987,9 @@
       }
     },
     {
-      "code": "cool_winter",
-      "name_en": "Cool Winter",
-      "name_ru": "Холодная зима",
+      "code": "true_winter",
+      "name_en": "True Winter",
+      "name_ru": "Истинная зима",
       "season": "Winter",
       "temperature": "Cool",
       "value": "Medium-Deep",
@@ -3006,7 +3006,7 @@
           "hex": "#FFFFFF",
           "name_en": "Pure White",
           "name_ru": "Чистый белый",
-          "id": "cool_winter_01",
+          "id": "true_winter_01",
           "order": 1,
           "role": "light_neutral"
         },
@@ -3014,7 +3014,7 @@
           "hex": "#C7CBD4",
           "name_en": "Icy Grey",
           "name_ru": "Ледяной серый",
-          "id": "cool_winter_02",
+          "id": "true_winter_02",
           "order": 2,
           "role": "neutral"
         },
@@ -3022,7 +3022,7 @@
           "hex": "#D8C8ED",
           "name_en": "Icy Lilac",
           "name_ru": "Ледяная сирень",
-          "id": "cool_winter_03",
+          "id": "true_winter_03",
           "order": 3,
           "role": "signature"
         },
@@ -3030,7 +3030,7 @@
           "hex": "#E15A9A",
           "name_en": "Cool Pink",
           "name_ru": "Холодный розовый",
-          "id": "cool_winter_04",
+          "id": "true_winter_04",
           "order": 4,
           "role": "accent"
         },
@@ -3038,7 +3038,7 @@
           "hex": "#C2185B",
           "name_en": "Fuchsia",
           "name_ru": "Фуксия",
-          "id": "cool_winter_05",
+          "id": "true_winter_05",
           "order": 5,
           "role": "accent"
         },
@@ -3046,7 +3046,7 @@
           "hex": "#A3153D",
           "name_en": "Blue Red",
           "name_ru": "Холодный красный",
-          "id": "cool_winter_06",
+          "id": "true_winter_06",
           "order": 6,
           "role": "accent"
         },
@@ -3054,7 +3054,7 @@
           "hex": "#64307D",
           "name_en": "Royal Purple",
           "name_ru": "Королевский фиолетовый",
-          "id": "cool_winter_07",
+          "id": "true_winter_07",
           "order": 7,
           "role": "signature"
         },
@@ -3062,7 +3062,7 @@
           "hex": "#3557B7",
           "name_en": "Cobalt",
           "name_ru": "Кобальтовый",
-          "id": "cool_winter_08",
+          "id": "true_winter_08",
           "order": 8,
           "role": "signature"
         },
@@ -3070,7 +3070,7 @@
           "hex": "#2176AE",
           "name_en": "Clear Blue",
           "name_ru": "Чистый синий",
-          "id": "cool_winter_09",
+          "id": "true_winter_09",
           "order": 9,
           "role": "accent"
         },
@@ -3078,7 +3078,7 @@
           "hex": "#008D8A",
           "name_en": "Cool Turquoise",
           "name_ru": "Холодная бирюза",
-          "id": "cool_winter_10",
+          "id": "true_winter_10",
           "order": 10,
           "role": "accent"
         },
@@ -3086,7 +3086,7 @@
           "hex": "#007A57",
           "name_en": "Cool Emerald",
           "name_ru": "Холодный изумрудный",
-          "id": "cool_winter_11",
+          "id": "true_winter_11",
           "order": 11,
           "role": "dark_neutral"
         },
@@ -3094,7 +3094,7 @@
           "hex": "#111111",
           "name_en": "Black",
           "name_ru": "Черный",
-          "id": "cool_winter_12",
+          "id": "true_winter_12",
           "order": 12,
           "role": "dark_neutral"
         }
@@ -3176,8 +3176,8 @@
         ]
       },
       "display": {
-        "title_ru": "Холодная зима",
-        "title_en": "Cool Winter",
+        "title_ru": "Истинная зима",
+        "title_en": "True Winter",
         "meaning_ru": "Выраженно холодный, чистый и контрастный колорит.",
         "card_description": "Выраженно холодный, чистый и контрастный цветотип. Его украшают ледяные оттенки, насыщенные синие, ягодные и четкий черно-белый контраст."
       },
@@ -3279,7 +3279,7 @@
         "page_2_title": "Твоя палитра",
         "show_analysis_date": true,
         "show_passport_id": true,
-        "passport_id_prefix": "COOL-WINTER"
+        "passport_id_prefix": "TRUE-WINTER"
       }
     },
     {
